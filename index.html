@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Protocol — Train, Eat, Progress</title>
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  --bg: #16191C;
+  --bg-elevated: #1D2125;
+  --bg-card: #202428;
+  --bg-input: #1A1D21;
+  --line: #2B3036;
+  --line-soft: #24282D;
+
+  --text-primary: #F2EFE9;
+  --text-secondary: #9BA3AB;
+  --text-tertiary: #6B7480;
+
+  --accent: #E8943A;
+  --accent-dim: #3A2E1E;
+  --accent-soft: #E8943A22;
+
+  --good: #8FA888;
+  --good-soft: #8FA88822;
+  --warn: #C76B5C;
+  --warn-soft: #C76B5C22;
+  --info: #6FA3C7;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 999px;
+
+  --font-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  height: 100%;
+  overscroll-behavior-y: none;
+}
+
+body {
+  min-height: 100vh;
+}
+
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; }
+
+::-webkit-scrollbar { width: 0; height: 0; }
+
+a { color: inherit; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.font-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+/* ============================================================
+   LAYOUT SHELL
+   ============================================================ */
+.app-header {
+  position: sticky; top: 0; z-index: 20;
+  background: linear-gradient(180deg, var(--bg) 70%, transparent);
+  padding: 18px 18px 8px;
+  backdrop-filter: blur(8px);
+}
+.app-header-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+}
+.app-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+}
+.app-date {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.view { display: none; padding: 4px 16px calc(94px + var(--safe-bottom)); max-width: 640px; margin: 0 auto; }
+.view.active { display: block; }
+
+/* ============================================================
+   BOTTOM NAV
+   ============================================================ */
+.tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
+  display: flex;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--line);
+  padding: 8px 8px calc(8px + var(--safe-bottom));
+  gap: 4px;
+}
+.tab-btn {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: none; border: none;
+  padding: 8px 4px 6px;
+  color: var(--text-tertiary);
+  border-radius: var(--radius-md);
+  transition: color .15s ease;
+}
+.tab-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.tab-btn span { font-size: 11px; font-weight: 500; }
+.tab-btn.active { color: var(--accent); }
+.tab-btn:active { background: var(--line-soft); }
+
+/* ============================================================
+   CARDS & PRIMITIVES
+   ============================================================ */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  margin-bottom: 14px;
+}
+.card-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.card-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid var(--line);
+}
+.pill.good { color: var(--good); background: var(--good-soft); border-color: transparent; }
+.pill.warn { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+.pill.accent { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: 14px; font-weight: 600;
+  padding: 11px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  transition: transform .1s ease, background .15s ease;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #16191C; }
+.btn-ghost { background: transparent; border-color: var(--line); color: var(--text-secondary); }
+.btn-sm { padding: 7px 12px; font-size: 12.5px; border-radius: var(--radius-sm); }
+.btn-block { width: 100%; }
+
+input[type="number"], input[type="text"], select {
+  background: var(--bg-input);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  font-size: 14px;
+  width: 100%;
+}
+input[type="number"]:focus, input[type="text"]:focus, select:focus {
+  border-color: var(--accent);
+}
+label.field-label {
+  display: block; font-size: 12px; color: var(--text-secondary);
+  margin-bottom: 6px; font-weight: 500;
+}
+.field { margin-bottom: 12px; }
+.field-row { display: flex; gap: 10px; }
+.field-row .field { flex: 1; }
+
+/* checkbox */
+.check {
+  width: 22px; height: 22px;
+  border-radius: 7px;
+  border: 1.5px solid var(--line);
+  background: var(--bg-input);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all .15s ease;
+}
+.check.checked {
+  background: var(--good); border-color: var(--good);
+}
+.check svg { width: 13px; height: 13px; opacity: 0; transition: opacity .1s ease; stroke: #16191C; stroke-width: 3; }
+.check.checked svg { opacity: 1; }
+
+/* ============================================================
+   TODAY VIEW — budget ring
+   ============================================================ */
+.ring-card {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 28px 18px 22px;
+}
+.ring-wrap { position: relative; width: 220px; height: 220px; margin-bottom: 14px; }
+.ring-wrap svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+.ring-bg { fill: none; stroke: var(--bg-input); stroke-width: 14; }
+.ring-fg { fill: none; stroke: var(--accent); stroke-width: 14; stroke-linecap: round; transition: stroke-dashoffset .5s ease, stroke .3s ease; }
+.ring-fg.over { stroke: var(--warn); }
+.ring-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.ring-num { font-family: var(--font-display); font-size: 44px; font-weight: 600; line-height: 1; }
+.ring-label { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+
+.stat-row { display: flex; gap: 10px; width: 100%; margin-top: 4px; }
+.stat-box {
+  flex: 1; background: var(--bg-input); border-radius: var(--radius-md);
+  padding: 12px 10px; text-align: center;
+}
+.stat-box .v { font-family: var(--font-mono); font-size: 18px; font-weight: 600; }
+.stat-box .l { font-size: 10.5px; color: var(--text-tertiary); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.macro-bars { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+.macro-bar-row { }
+.macro-bar-top { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 5px; }
+.macro-bar-top .name { color: var(--text-secondary); }
+.macro-bar-top .nums { font-family: var(--font-mono); color: var(--text-primary); }
+.macro-track { height: 7px; background: var(--bg-input); border-radius: var(--radius-full); overflow: hidden; }
+.macro-fill { height: 100%; border-radius: var(--radius-full); transition: width .4s ease; }
+
+.quick-actions { display: flex; gap: 10px; margin-top: 4px; flex-wrap: wrap; }
+.quick-actions .btn { flex: 1; min-width: 130px; }
+
+.section-heading {
+  font-family: var(--font-display); font-size: 14px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin: 22px 0 10px;
+}
+
+.log-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.log-item:last-child { border-bottom: none; }
+.log-item-name { font-size: 14px; font-weight: 500; }
+.log-item-meta { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+.log-item-val { font-family: var(--font-mono); font-size: 13px; color: var(--accent); }
+.log-item-del { background: none; border: none; color: var(--text-tertiary); padding: 4px 8px; font-size: 18px; line-height: 1; }
+
+.empty-state {
+  text-align: center; padding: 24px 12px; color: var(--text-tertiary); font-size: 13px;
+}
+
+/* ============================================================
+   TRAIN VIEW
+   ============================================================ */
+.day-strip {
+  display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 14px;
+  scrollbar-width: none;
+}
+.day-strip::-webkit-scrollbar { display: none; }
+.day-chip {
+  flex-shrink: 0;
+  font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+  padding: 9px 16px;
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  border: 1px solid var(--line-soft);
+  color: var(--text-secondary);
+}
+.day-chip.active { background: var(--accent); border-color: var(--accent); color: #16191C; }
+.day-chip.today-marker { position: relative; }
+.day-chip.today-marker::after {
+  content: ''; position: absolute; top: -2px; right: -2px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--good);
+}
+
+.day-theme-card { margin-bottom: 18px; }
+.day-theme-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+.day-theme-title { font-family: var(--font-display); font-size: 21px; font-weight: 600; }
+.day-theme-goal { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; }
+.day-meta-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.exercise-card {
+  background: var(--bg-card);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-lg);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.exercise-head {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 15px 16px;
+}
+.exercise-info { flex: 1; min-width: 0; }
+.exercise-name { font-size: 15.5px; font-weight: 600; margin-bottom: 2px; }
+.exercise-type { font-size: 11.5px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600; margin-bottom: 6px; }
+.exercise-specs { font-size: 12.5px; color: var(--text-secondary); }
+.exercise-burn { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
+
+.exercise-detail {
+  border-top: 1px solid var(--line-soft);
+  padding: 14px 16px 16px;
+  display: none;
+}
+.exercise-detail.open { display: block; }
+.detail-block { margin-bottom: 12px; }
+.detail-block:last-child { margin-bottom: 0; }
+.detail-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-tertiary); font-weight: 600; margin-bottom: 6px; }
+.detail-block ol { padding-left: 18px; }
+.detail-block li { font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 3px; }
+.tip-box, .mistake-box {
+  font-size: 12.5px; line-height: 1.5; padding: 10px 12px; border-radius: var(--radius-sm); margin-top: 8px;
+}
+.tip-box { background: var(--good-soft); color: var(--good); }
+.mistake-box { background: var(--warn-soft); color: var(--warn); }
+
+.exercise-toggle-btn {
+  background: none; border: none; color: var(--text-tertiary);
+  padding: 4px; flex-shrink: 0;
+}
+.exercise-toggle-btn svg { width: 18px; height: 18px; transition: transform .2s ease; }
+.exercise-toggle-btn.open svg { transform: rotate(180deg); }
+
+.set-editor {
+  display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+}
+.set-editor .mini-field { display: flex; align-items: center; gap: 5px; }
+.set-editor label { font-size: 11px; color: var(--text-tertiary); }
+.set-editor input { width: 52px; padding: 6px 8px; font-size: 13px; text-align: center; }
+.set-editor .duration-field input { width: 64px; }
+
+.day-summary-card {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 18px;
+}
+.day-summary-card .v { font-family: var(--font-mono); font-size: 24px; font-weight: 600; color: var(--accent); }
+.day-summary-card .l { font-size: 11.5px; color: var(--text-tertiary); margin-top: 2px; }
+
+/* circuit banner */
+.circuit-banner {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-size: 12.5px;
+  color: var(--accent);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+/* ============================================================
+   EAT VIEW
+   ============================================================ */
+.meal-card { margin-bottom: 12px; }
+.meal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.meal-head-left { display: flex; align-items: center; gap: 10px; }
+.meal-title { font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+.meal-time { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); }
+.meal-kcal { font-family: var(--font-mono); font-size: 13px; color: var(--accent); }
+.meal-note { font-size: 12px; color: var(--info); margin-bottom: 10px; padding: 8px 10px; background: #6FA3C722; border-radius: var(--radius-sm); }
+
+.food-item-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13.5px;
+}
+.food-item-row:last-child { border-bottom: none; }
+.food-item-name { flex: 1; }
+.food-item-amt { color: var(--text-tertiary); font-size: 12px; margin-left: 8px; }
+.food-item-macros { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-tertiary); white-space: nowrap; }
+.food-item-actions { display: flex; gap: 4px; margin-left: 8px; }
+.icon-btn {
+  background: var(--bg-input); border: 1px solid var(--line);
+  width: 28px; height: 28px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary);
+}
+.icon-btn svg { width: 14px; height: 14px; }
+
+.meal-totals { display: flex; gap: 10px; margin-top: 12px; font-size: 11.5px; }
+.meal-totals span { font-family: var(--font-mono); color: var(--text-secondary); }
+
+/* swap modal */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  z-index: 50; display: none; align-items: flex-end;
+  backdrop-filter: blur(2px);
+}
+.modal-backdrop.open { display: flex; }
+.modal-sheet {
+  background: var(--bg-elevated);
+  width: 100%; max-height: 85vh; overflow-y: auto;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 18px calc(24px + var(--safe-bottom));
+  border-top: 1px solid var(--line);
+}
+.modal-handle {
+  width: 36px; height: 4px; background: var(--line); border-radius: 99px;
+  margin: 0 auto 16px;
+}
+.modal-title { font-family: var(--font-display); font-size: 19px; font-weight: 600; margin-bottom: 4px; }
+.modal-sub { font-size: 12.5px; color: var(--text-secondary); margin-bottom: 16px; }
+.food-search-results { max-height: 240px; overflow-y: auto; margin-bottom: 14px; border-radius: var(--radius-md); }
+.food-result-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 11px 12px; border-radius: var(--radius-sm);
+  background: var(--bg-card); margin-bottom: 6px;
+}
+.food-result-row.selected { border: 1px solid var(--accent); }
+.food-result-name { font-size: 13.5px; font-weight: 500; }
+.food-result-macro { font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono); }
+.food-result-btn { background: var(--accent-soft); color: var(--accent); border: none; border-radius: var(--radius-sm); padding: 6px 12px; font-size: 12px; font-weight: 600; }
+
+.recipe-suggestion {
+  margin-top: 14px; padding: 12px 14px; background: var(--good-soft);
+  border-radius: var(--radius-md); font-size: 12.5px; color: var(--good); line-height: 1.5;
+}
+
+/* ============================================================
+   PROGRESS VIEW
+   ============================================================ */
+.weight-input-row { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 18px; }
+.weight-input-row .field { flex: 1; margin-bottom: 0; }
+
+.chart-wrap { width: 100%; height: 180px; margin-bottom: 8px; }
+.streak-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 10px; }
+.streak-cell {
+  aspect-ratio: 1; border-radius: 6px; background: var(--bg-input);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: var(--text-tertiary); font-family: var(--font-mono);
+}
+.streak-cell.done { background: var(--good); color: #16191C; font-weight: 700; }
+.streak-cell.partial { background: var(--accent-soft); color: var(--accent); }
+
+.weekly-avg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast {
+  position: fixed; bottom: calc(90px + var(--safe-bottom)); left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--bg-elevated); border: 1px solid var(--line);
+  padding: 10px 18px; border-radius: var(--radius-full);
+  font-size: 13px; font-weight: 500;
+  opacity: 0; pointer-events: none; transition: all .25s ease;
+  z-index: 60; white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.export-row { display: flex; gap: 10px; margin-top: 18px; }
+.export-row .btn { flex: 1; }
+
+@media (min-width: 480px) {
+  .ring-wrap { width: 240px; height: 240px; }
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header-row">
+    <div class="app-title">Protocol</div>
+    <div class="app-date font-mono" id="headerDate">—</div>
+  </div>
+</header>
+
+<!-- ============ TODAY ============ -->
+<main class="view active" id="view-today">
+  <div class="card ring-card">
+    <div class="ring-wrap">
+      <svg viewBox="0 0 220 220">
+        <circle class="ring-bg" cx="110" cy="110" r="95"></circle>
+        <circle class="ring-fg" id="ringFg" cx="110" cy="110" r="95" stroke-dasharray="597" stroke-dashoffset="597"></circle>
+      </svg>
+      <div class="ring-center">
+        <div class="ring-num font-mono" id="ringNum">0</div>
+        <div class="ring-label" id="ringLabel">kcal remaining</div>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="v" id="statTarget">—</div><div class="l">Target</div></div>
+      <div class="stat-box"><div class="v" id="statEaten">0</div><div class="l">Eaten</div></div>
+      <div class="stat-box"><div class="v" id="statBurned">0</div><div class="l">Burned</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Macros today</div>
+    <div class="card-sub">Targets recalculate from base + exercise</div>
+    <div class="macro-bars">
+      <div class="macro-bar-row">
+        <div class="macro-bar-top"><span class="name">Protein</span><span class="nums font-mono" id="macroProteinNums">0 / 0g</span></div>
+        <div class="macro-track"><div class="macro-fill" id="macroProteinFill" style="width:0%;background:var(--accent)"></div></div>
+      </div>
+      <div class="macro-bar-row">
+        <div class="macro-bar-top"><span class="name">Carbs</span><span class="nums font-mono" id="macroCarbsNums">0 / 0g</span></div>
+        <div class="macro-track"><div class="macro-fill" id="macroCarbsFill" style="width:0%;background:var(--info)"></div></div>
+      </div>
+      <div class="macro-bar-row">
+        <div class="macro-bar-top"><span class="name">Fat</span><span class="nums font-mono" id="macroFatNums">0 / 0g</span></div>
+        <div class="macro-track"><div class="macro-fill" id="macroFatFill" style="width:0%;background:var(--good)"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="quick-actions">
+    <button class="btn btn-primary" onclick="switchView('train')">Log workout</button>
+    <button class="btn" onclick="openActivityModal()">Log activity</button>
+    <button class="btn" onclick="openStepsModal()">Log steps</button>
+  </div>
+
+  <div class="section-heading">Today's exercise log</div>
+  <div class="card" id="todayExerciseLog">
+    <div class="empty-state">Nothing logged yet today. Head to Train to check off exercises.</div>
+  </div>
+
+  <div class="section-heading">Other activity</div>
+  <div class="card" id="todayActivityLog">
+    <div class="empty-state">No extra activity logged. Tap "Log activity" above.</div>
+  </div>
+
+  <div class="section-heading">Steps</div>
+  <div class="card" id="todayStepsLog">
+    <div class="empty-state">Steps not logged yet today.</div>
+  </div>
+</main>
+
+<!-- ============ TRAIN ============ -->
+<main class="view" id="view-train">
+  <div class="day-strip" id="trainDayStrip"></div>
+  <div class="card day-theme-card" id="trainThemeCard"></div>
+  <div id="trainExerciseList"></div>
+
+  <div class="section-heading">Did something else today?</div>
+  <div class="card" id="customWorkoutList">
+    <div class="empty-state">No extra activity logged today.</div>
+  </div>
+  <button class="btn btn-block" onclick="openActivityModal()" style="margin-bottom:14px">+ Log a workout not on this list</button>
+
+  <div class="card day-summary-card">
+    <div>
+      <div class="l">Estimated burn today</div>
+      <div class="v" id="trainDayBurn">0 kcal</div>
+    </div>
+    <button class="btn btn-primary btn-sm" id="addBurnToLogBtn" onclick="commitDayBurnToLog()">Add to today's log</button>
+  </div>
+</main>
+
+<!-- ============ EAT ============ -->
+<main class="view" id="view-eat">
+  <div class="card">
+    <div class="card-title">Today's target</div>
+    <div class="card-sub">Recalculated automatically from your exercise log</div>
+    <div class="weekly-avg-grid">
+      <div class="stat-box"><div class="v" id="eatTargetKcal">1900</div><div class="l">Calories</div></div>
+      <div class="stat-box"><div class="v" id="eatTargetProtein">120g</div><div class="l">Protein</div></div>
+    </div>
+  </div>
+  <div class="day-strip" id="eatDayStrip"></div>
+  <div id="eatMealList"></div>
+</main>
+
+<!-- ============ PROGRESS ============ -->
+<main class="view" id="view-progress">
+  <div class="card">
+    <div class="card-title">Weight</div>
+    <div class="weight-input-row">
+      <div class="field">
+        <label class="field-label">Today's weight (kg)</label>
+        <input type="number" id="weightInput" step="0.1" placeholder="75.5">
+      </div>
+      <button class="btn btn-primary" onclick="logWeight()">Save</button>
+    </div>
+    <div class="chart-wrap"><svg id="weightChart" viewBox="0 0 320 180" width="100%" height="180"></svg></div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="v" id="weightStart">—</div><div class="l">Start</div></div>
+      <div class="stat-box"><div class="v" id="weightCurrent">—</div><div class="l">Current</div></div>
+      <div class="stat-box"><div class="v" id="weightTarget">—</div><div class="l">Target</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">This week</div>
+    <div class="weekly-avg-grid">
+      <div class="stat-box"><div class="v" id="weekAvgCal">—</div><div class="l">Avg calories</div></div>
+      <div class="stat-box"><div class="v" id="weekAvgProtein">—</div><div class="l">Avg protein</div></div>
+      <div class="stat-box"><div class="v" id="weekAvgBurn">—</div><div class="l">Avg burn</div></div>
+      <div class="stat-box"><div class="v" id="weekWorkouts">—</div><div class="l">Workouts done</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Last 7 days</div>
+    <div class="card-sub">Exercise adherence</div>
+    <div class="streak-grid" id="streakGrid"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Backup your data</div>
+    <div class="card-sub">All data lives in this browser only. Export regularly so you don't lose history.</div>
+    <div class="export-row">
+      <button class="btn btn-block" onclick="exportData()">Export JSON</button>
+      <button class="btn btn-block" onclick="document.getElementById('importFile').click()">Import JSON</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+  </div>
+</main>
+
+<nav class="tabbar">
+  <button class="tab-btn active" data-view="today" onclick="switchView('today')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+    <span>Today</span>
+  </button>
+  <button class="tab-btn" data-view="train" onclick="switchView('train')">
+    <svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M4 9l2-2 2 2-2 2zM16 16l2 2 2-2-2-2zM3 21l4-4M17 7l4-4"/></svg>
+    <span>Train</span>
+  </button>
+  <button class="tab-btn" data-view="eat" onclick="switchView('eat')">
+    <svg viewBox="0 0 24 24"><path d="M6 2v8a2 2 0 002 2h0a2 2 0 002-2V2M6 2v20M6 9h4M18 2v9a3 3 0 01-3 3v8M18 2c-1.5 0-3 1.5-3 4v5"/></svg>
+    <span>Eat</span>
+  </button>
+  <button class="tab-btn" data-view="progress" onclick="switchView('progress')">
+    <svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l4-4 3 3 5-6"/></svg>
+    <span>Progress</span>
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<!-- Activity log modal -->
+<div class="modal-backdrop" id="activityModalBackdrop" onclick="if(event.target===this) closeActivityModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Log other activity</div>
+    <div class="modal-sub">Anything outside the planned workout — calculated via MET formula</div>
+    <div class="field">
+      <label class="field-label">Activity</label>
+      <select id="activityType" onchange="toggleCustomActivityFields()"></select>
+    </div>
+    <div class="field" id="customActivityNameField" style="display:none">
+      <label class="field-label">What did you do?</label>
+      <input type="text" id="customActivityName" placeholder="e.g. burpees, volleyball, hiking">
+    </div>
+    <div class="field" id="customActivityIntensityField" style="display:none">
+      <label class="field-label">Effort level</label>
+      <select id="customActivityIntensity">
+        <option value="light">Light — easy, barely breaking a sweat</option>
+        <option value="moderate" selected>Moderate — steady effort, breathing harder</option>
+        <option value="vigorous">Vigorous — hard effort, can't hold a conversation</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label">Duration (minutes)</label>
+        <input type="number" id="activityDuration" placeholder="30">
+      </div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="logActivity()">Add to today's log</button>
+  </div>
+</div>
+
+<!-- Steps log modal -->
+<div class="modal-backdrop" id="stepsModalBackdrop" onclick="if(event.target===this) closeStepsModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Log today's steps</div>
+    <div class="modal-sub">From your Galaxy Watch 7. Enter calories if Samsung Health shows them — otherwise we'll estimate.</div>
+    <div class="field">
+      <label class="field-label">Total steps</label>
+      <input type="number" id="stepsInput" placeholder="8500">
+    </div>
+    <div class="field">
+      <label class="field-label">Calories burned (from watch, optional)</label>
+      <input type="number" id="stepsCalInput" placeholder="Leave blank to estimate">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="logSteps()">Save steps</button>
+  </div>
+</div>
+
+<!-- Food swap modal -->
+<div class="modal-backdrop" id="swapModalBackdrop" onclick="if(event.target===this) closeSwapModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="swapModalTitle">Swap ingredient</div>
+    <div class="modal-sub">Pick a replacement — calories and macros recalculate automatically</div>
+    <div class="field">
+      <label class="field-label">Search foods</label>
+      <input type="text" id="swapSearchInput" placeholder="Type to search..." oninput="renderSwapResults()">
+    </div>
+    <div class="food-search-results" id="swapResultsList"></div>
+    <div class="field">
+      <label class="field-label">Amount</label>
+      <input type="number" id="swapAmountInput" step="0.5" placeholder="e.g. 100">
+      <div class="card-sub" id="swapUnitHint" style="margin-top:6px;margin-bottom:0;"></div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="confirmSwap()">Confirm swap</button>
+    <div class="recipe-suggestion" id="recipeSuggestion" style="display:none"></div>
+  </div>
+</div>
+
+<!-- Add food modal -->
+<div class="modal-backdrop" id="addFoodModalBackdrop" onclick="if(event.target===this) closeAddFoodModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Add food</div>
+    <div class="modal-sub">Search the food list, or add something custom with your own numbers</div>
+    <div class="field">
+      <label class="field-label">Search foods</label>
+      <input type="text" id="addFoodSearchInput" placeholder="Type to search..." oninput="renderAddFoodResults()">
+    </div>
+    <div class="food-search-results" id="addFoodResultsList"></div>
+    <div class="field">
+      <label class="field-label">Amount</label>
+      <input type="number" id="addFoodAmountInput" step="0.5" placeholder="e.g. 100">
+      <div class="card-sub" id="addFoodUnitHint" style="margin-top:6px;margin-bottom:0;"></div>
+    </div>
+    <button class="btn btn-ghost btn-block" onclick="toggleCustomFoodMode()" style="margin-bottom:12px">Can't find it — add a custom food</button>
+    <div id="customFoodFields" style="display:none">
+      <div class="field">
+        <label class="field-label">Food name</label>
+        <input type="text" id="customFoodName" placeholder="e.g. Restaurant dal, homemade sabzi">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Calories</label>
+          <input type="number" id="customFoodCal" placeholder="kcal">
+        </div>
+        <div class="field">
+          <label class="field-label">Protein (g)</label>
+          <input type="number" id="customFoodProtein" placeholder="g">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Carbs (g)</label>
+          <input type="number" id="customFoodCarbs" placeholder="g">
+        </div>
+        <div class="field">
+          <label class="field-label">Fat (g)</label>
+          <input type="number" id="customFoodFat" placeholder="g">
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="confirmAddFood()">Add to meal</button>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
