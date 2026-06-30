@@ -556,260 +556,291 @@ const EXERCISE_PLAN = [
   }
 ];
 
+
 // ============================================================
-// FOOD DATABASE — for swap engine. Values per 100g unless noted.
-// From diet plan PDF (Protein Source Guide) + meal ingredients.
+// FOOD DATABASE — complete from diet plan PDF + protein guide.
+// Values per 100g unless unit specifies otherwise.
+// category: 'protein' | 'carb' | 'fat' | 'other'
 // ============================================================
 const FOOD_DB = [
-  // ---- Proteins (cooked unless noted) ----
-  { id: 'soya_chunks_dry', name: 'Soya chunks (dry)', unit: '100g', cal: 330, protein: 52, carbs: 33, fat: 0.5, category: 'protein' },
-  { id: 'tofu_firm', name: 'Tofu (firm)', unit: '100g', cal: 144, protein: 17, carbs: 3, fat: 8, category: 'protein' },
-  { id: 'paneer_lowfat', name: 'Paneer (low-fat)', unit: '100g', cal: 265, protein: 18, carbs: 6, fat: 20, category: 'protein' },
-  { id: 'black_beans', name: 'Black beans (cooked)', unit: '100g', cal: 132, protein: 21, carbs: 24, fat: 0.5, category: 'protein' },
-  { id: 'chickpeas', name: 'Chickpeas (cooked)', unit: '100g', cal: 164, protein: 19, carbs: 27, fat: 2.5, category: 'protein' },
-  { id: 'red_pinto_beans', name: 'Red/pinto beans (cooked)', unit: '100g', cal: 143, protein: 22, carbs: 26, fat: 0.5, category: 'protein' },
-  { id: 'green_peas', name: 'Green peas', unit: '100g', cal: 81, protein: 5, carbs: 14, fat: 0.4, category: 'protein' },
-  { id: 'dal_generic', name: 'Dal, all types (cooked)', unit: '100g', cal: 116, protein: 9, carbs: 20, fat: 0.4, category: 'protein' },
-  { id: 'whey_scoop', name: 'Whey protein, 1 scoop', unit: '1 scoop', cal: 120, protein: 24, carbs: 5, fat: 2, category: 'protein' },
-  { id: 'rajma', name: 'Rajma (kidney beans, cooked)', unit: '100g', cal: 143, protein: 22, carbs: 26, fat: 0.5, category: 'protein' },
-  // ---- Carb staples ----
-  { id: 'rice_cooked', name: 'Basmati/brown rice (cooked)', unit: '100g', cal: 130, protein: 2.7, carbs: 28, fat: 0.3, category: 'carb' },
-  { id: 'quinoa_cooked', name: 'Quinoa (cooked)', unit: '100g', cal: 120, protein: 4.4, carbs: 21, fat: 1.9, category: 'carb' },
-  { id: 'oats_dry', name: 'Rolled oats (dry)', unit: '100g', cal: 380, protein: 13, carbs: 68, fat: 7, category: 'carb' },
-  { id: 'roti', name: 'Whole wheat roti', unit: '1 piece', cal: 85, protein: 3, carbs: 18, fat: 0.5, category: 'carb' },
-  { id: 'bread_daves', name: "Dave's Killer Bread, 1 slice", unit: '1 slice', cal: 110, protein: 5, carbs: 22, fat: 1.5, category: 'carb' },
-  { id: 'tortilla_wheat', name: 'Whole wheat tortilla, 1', unit: '1 piece', cal: 130, protein: 4, carbs: 22, fat: 3.5, category: 'carb' },
-  // ---- Fats / extras ----
-  { id: 'peanut_butter', name: 'Natural peanut butter', unit: '1 tbsp', cal: 95, protein: 4, carbs: 3, fat: 8, category: 'fat' },
-  { id: 'chia_seeds', name: 'Chia seeds', unit: '1 tbsp', cal: 58, protein: 2, carbs: 5, fat: 3.5, category: 'fat' },
-  { id: 'almonds', name: 'Almonds, raw', unit: '5 pieces', cal: 35, protein: 1.3, carbs: 1.3, fat: 3, category: 'fat' },
-  { id: 'avocado', name: 'Avocado', unit: '1/4 piece', cal: 80, protein: 1, carbs: 4, fat: 7, category: 'fat' },
-  { id: 'almond_milk', name: 'Unsweetened almond milk', unit: '200ml', cal: 20, protein: 1, carbs: 1, fat: 1.5, category: 'other' },
-  { id: 'greek_yogurt', name: 'Plain low-fat yogurt (Fage 0%)', unit: '100g', cal: 60, protein: 10, carbs: 4, fat: 0, category: 'protein' },
-  { id: 'banana', name: 'Banana, medium', unit: '1 whole', cal: 105, protein: 1.3, carbs: 27, fat: 0.4, category: 'other' },
-  { id: 'mango_berries_frozen', name: 'Frozen mango/mixed berries', unit: '1/2 cup', cal: 40, protein: 0.5, carbs: 10, fat: 0, category: 'other' },
-  { id: 'protein_bar', name: 'No Cow / ALOHA protein bar', unit: '1 bar', cal: 200, protein: 20, carbs: 20, fat: 7, category: 'protein' },
-  { id: 'spinach', name: 'Baby spinach/kale', unit: '1 cup', cal: 10, protein: 1, carbs: 2, fat: 0, category: 'other' },
-  { id: 'tahini', name: 'Tahini dressing', unit: '1 tbsp', cal: 45, protein: 1.5, carbs: 2, fat: 4, category: 'fat' }
+  // ---- PROTEINS ----
+  { id: 'soya_chunks_dry',    name: 'Soya chunks (dry)',         unit: '100g',    cal: 330, protein: 52,   carbs: 33,  fat: 0.5, category: 'protein' },
+  { id: 'soya_chunks_cooked', name: 'Soya chunks (cooked)',      unit: '100g',    cal: 112, protein: 17,   carbs: 10,  fat: 0.2, category: 'protein' },
+  { id: 'tofu_firm',          name: 'Tofu, firm',                unit: '100g',    cal: 144, protein: 17,   carbs: 3,   fat: 8,   category: 'protein' },
+  { id: 'paneer_lowfat',      name: 'Paneer, low-fat',           unit: '100g',    cal: 265, protein: 18,   carbs: 6,   fat: 20,  category: 'protein' },
+  { id: 'paneer_fullfat',     name: 'Paneer, full-fat',          unit: '100g',    cal: 321, protein: 21,   carbs: 3,   fat: 25,  category: 'protein' },
+  { id: 'black_beans',        name: 'Black beans (cooked)',      unit: '100g',    cal: 132, protein: 21,   carbs: 24,  fat: 0.5, category: 'protein' },
+  { id: 'chickpeas',          name: 'Chickpeas / chole (cooked)',unit: '100g',    cal: 164, protein: 19,   carbs: 27,  fat: 2.5, category: 'protein' },
+  { id: 'rajma',              name: 'Rajma / kidney beans (cooked)',unit:'100g',  cal: 143, protein: 22,   carbs: 26,  fat: 0.5, category: 'protein' },
+  { id: 'red_pinto_beans',    name: 'Red / pinto beans (cooked)',unit: '100g',    cal: 143, protein: 22,   carbs: 26,  fat: 0.5, category: 'protein' },
+  { id: 'green_peas',         name: 'Green peas',                unit: '100g',    cal: 81,  protein: 5,    carbs: 14,  fat: 0.4, category: 'protein' },
+  { id: 'dal_generic',        name: 'Dal, generic (cooked)',     unit: '100g',    cal: 116, protein: 9,    carbs: 20,  fat: 0.4, category: 'protein' },
+  { id: 'dal_toor',           name: 'Toor dal (cooked)',         unit: '100g',    cal: 115, protein: 7,    carbs: 20,  fat: 0.4, category: 'protein' },
+  { id: 'dal_moong',          name: 'Moong dal (cooked)',        unit: '100g',    cal: 105, protein: 7.6,  carbs: 18,  fat: 0.4, category: 'protein' },
+  { id: 'dal_masoor',         name: 'Masoor dal / red lentils (cooked)', unit:'100g', cal:116, protein:9,  carbs:20,   fat: 0.4, category: 'protein' },
+  { id: 'red_lentils_dry',    name: 'Red lentils (dry)',         unit: '100g',    cal: 352, protein: 24,   carbs: 60,  fat: 1,   category: 'protein' },
+  { id: 'whey_scoop',         name: 'Whey protein, 1 scoop',     unit: '1 scoop', cal: 120, protein: 24,   carbs: 5,   fat: 2,   category: 'protein' },
+  { id: 'greek_yogurt',       name: 'Plain low-fat yogurt (Fage 0%)', unit:'100g',cal: 60, protein: 10,   carbs: 4,   fat: 0,   category: 'protein' },
+  { id: 'protein_bar',        name: 'No Cow / ALOHA protein bar',unit: '1 bar',   cal: 200, protein: 20,   carbs: 20,  fat: 7,   category: 'protein' },
+
+  // ---- CARB STAPLES ----
+  { id: 'rice_cooked',        name: 'Basmati / brown rice (cooked)', unit:'100g', cal: 130, protein: 2.7,  carbs: 28,  fat: 0.3, category: 'carb' },
+  { id: 'quinoa_cooked',      name: 'Quinoa (cooked)',           unit: '100g',    cal: 120, protein: 4.4,  carbs: 21,  fat: 1.9, category: 'carb' },
+  { id: 'oats_dry',           name: 'Rolled oats (dry)',         unit: '100g',    cal: 380, protein: 13,   carbs: 68,  fat: 7,   category: 'carb' },
+  { id: 'roti',               name: 'Whole wheat roti',          unit: '1 piece', cal: 85,  protein: 3,    carbs: 18,  fat: 0.5, category: 'carb' },
+  { id: 'bread_daves',        name: "Dave's Killer Bread, 1 slice", unit:'1 slice',cal:110, protein: 5,    carbs: 22,  fat: 1.5, category: 'carb' },
+  { id: 'tortilla_wheat',     name: 'Whole wheat tortilla',      unit: '1 piece', cal: 130, protein: 4,    carbs: 22,  fat: 3.5, category: 'carb' },
+
+  // ---- FATS ----
+  { id: 'peanut_butter',      name: 'Natural peanut butter',     unit: '1 tbsp',  cal: 95,  protein: 4,    carbs: 3,   fat: 8,   category: 'fat' },
+  { id: 'chia_seeds',         name: 'Chia seeds',                unit: '1 tbsp',  cal: 58,  protein: 2,    carbs: 5,   fat: 3.5, category: 'fat' },
+  { id: 'almonds',            name: 'Almonds, raw',              unit: '5 pieces',cal: 35,  protein: 1.3,  carbs: 1.3, fat: 3,   category: 'fat' },
+  { id: 'avocado',            name: 'Avocado',                   unit: '1/4 piece',cal:80,  protein: 1,    carbs: 4,   fat: 7,   category: 'fat' },
+  { id: 'tahini',             name: 'Tahini / lemon-cumin dressing', unit:'1 tbsp',cal:45, protein: 1.5,  carbs: 2,   fat: 4,   category: 'fat' },
+  { id: 'olive_oil',          name: 'Olive oil',                 unit: '1 tsp',   cal: 40,  protein: 0,    carbs: 0,   fat: 4.5, category: 'fat' },
+
+  // ---- OTHER / FRUITS / VEGETABLES ----
+  { id: 'almond_milk',        name: 'Unsweetened almond milk',   unit: '100ml',   cal: 10,  protein: 0.5,  carbs: 0.5, fat: 0.75, category: 'other' },
+  { id: 'banana',             name: 'Banana, medium',            unit: '1 whole', cal: 105, protein: 1.3,  carbs: 27,  fat: 0.4, category: 'other' },
+  { id: 'apple',              name: 'Apple, medium',             unit: '1 whole', cal: 95,  protein: 0.5,  carbs: 25,  fat: 0.3, category: 'other' },
+  { id: 'orange',             name: 'Orange, medium',            unit: '1 whole', cal: 62,  protein: 1.2,  carbs: 15,  fat: 0.2, category: 'other' },
+  { id: 'mango_berries_frozen',name:'Frozen mango / mixed berries',unit:'1/2 cup',cal:40,  protein: 0.5,  carbs: 10,  fat: 0,   category: 'other' },
+  { id: 'spinach',            name: 'Baby spinach / kale',       unit: '1 cup',   cal: 10,  protein: 1,    carbs: 2,   fat: 0,   category: 'other' },
+  { id: 'broccoli',           name: 'Broccoli, steamed',         unit: '100g',    cal: 35,  protein: 2.4,  carbs: 7,   fat: 0.4, category: 'other' },
+  { id: 'cucumber',           name: 'Cucumber',                  unit: '100g',    cal: 15,  protein: 0.7,  carbs: 3.6, fat: 0.1, category: 'other' },
+  { id: 'tomato',             name: 'Tomato',                    unit: '100g',    cal: 18,  protein: 0.9,  carbs: 3.9, fat: 0.2, category: 'other' },
+  { id: 'salad_side',         name: 'Side salad (cucumber+tomato+onion)', unit:'1 bowl', cal:30, protein:1,carbs:6, fat:0.2, category:'other' },
+  { id: 'ryze_coffee',        name: 'RYZE mushroom coffee',      unit: '1 cup',   cal: 15,  protein: 0,    carbs: 3,   fat: 0,   category: 'other' }
 ];
 
 // ============================================================
-// DIET PLAN — from Diet-Plan-USA.pdf
+// DIET TARGETS — from diet plan PDF
 // ============================================================
 const DIET_TARGETS = { calories: 1900, protein: 120, carbs: 210, fat: 55 };
 
 const MEAL_WINDOWS = [
-  { id: 'preworkout', label: 'Pre-Workout', time: '6:30am', kcalTarget: 150 },
-  { id: 'breakfast', label: 'Breakfast', time: '8:30–9:30am', kcalTarget: 450, proteinTarget: 32, note: 'Post-workout. Take Minoxidil here.' },
-  { id: 'lunch', label: 'Lunch', time: '12:30–1:30pm', kcalTarget: 600, proteinTarget: 35 },
-  { id: 'snack', label: 'Evening Snack', time: '4:30–5:30pm', kcalTarget: 200 },
-  { id: 'dinner', label: 'Dinner', time: '7:30–8:30pm', kcalTarget: 550, proteinTarget: 30, note: 'Take Finasteride + supplements here.' }
+  { id: 'preworkout', label: 'Pre-Workout',    time: '6:30am',        kcalTarget: 150 },
+  { id: 'breakfast',  label: 'Breakfast',      time: '8:30–9:30am',   kcalTarget: 450, proteinTarget: 32, note: 'Post-workout. Take Minoxidil + D3 + K2 + B12 here.' },
+  { id: 'lunch',      label: 'Lunch',          time: '12:30–1:30pm',  kcalTarget: 600, proteinTarget: 35 },
+  { id: 'snack',      label: 'Evening Snack',  time: '4:30–5:30pm',   kcalTarget: 200 },
+  { id: 'dinner',     label: 'Dinner',         time: '7:30–8:30pm',   kcalTarget: 550, proteinTarget: 30, note: 'Take Finasteride + B-Complex here.' }
 ];
 
-const WEEKLY_MEAL_PLAN = {
-  mon: {
-    breakfast: 'Overnight oats + whey',
-    lunch: 'Soya chunks curry + rice + dahi',
-    snack: 'No Cow protein bar',
-    dinner: 'Tofu bhurji + 2 rotis + dal',
-    items: {
-      breakfast: [
-        { foodId: 'oats_dry', amount: 75, unitLabel: '75g' },
-        { foodId: 'almond_milk', amount: 200, unitLabel: '200ml' },
-        { foodId: 'whey_scoop', amount: 1, unitLabel: '1 scoop' },
-        { foodId: 'chia_seeds', amount: 1, unitLabel: '1 tbsp' },
-        { foodId: 'peanut_butter', amount: 1, unitLabel: '1 tbsp' },
-        { foodId: 'banana', amount: 0.5, unitLabel: '½ banana' },
-        { foodId: 'mango_berries_frozen', amount: 1, unitLabel: '½ cup' }
-      ],
-      lunch: [
-        { foodId: 'rice_cooked', amount: 150, unitLabel: '¾ cup cooked (~150g)' },
-        { foodId: 'soya_chunks_dry', amount: 40, unitLabel: 'curry (~40g dry)' },
-        { foodId: 'greek_yogurt', amount: 120, unitLabel: '½ cup' }
-      ],
-      snack: [
-        { foodId: 'protein_bar', amount: 1, unitLabel: '1 bar' }
-      ],
-      dinner: [
-        { foodId: 'tofu_firm', amount: 100, unitLabel: '100g (bhurji)' },
-        { foodId: 'roti', amount: 2, unitLabel: '2 pieces' },
-        { foodId: 'dal_generic', amount: 200, unitLabel: '1.5 cups (~200g)' }
+// ============================================================
+// MEAL OPTIONS — all options from the diet PDF for each meal slot.
+// Each meal window has a set of named options the user picks from.
+// The selected option is stored in state.days[dateKey].mealChoices[mealId].
+// ============================================================
+const MEAL_OPTIONS = {
+
+  preworkout: [
+    {
+      id: 'pre_standard',
+      label: 'Standard pre-workout',
+      items: [
+        { foodId: 'ryze_coffee',    amount: 1,   unitLabel: '1 cup RYZE / black coffee' },
+        { foodId: 'banana',         amount: 0.5, unitLabel: '½ banana' },
+        { foodId: 'almonds',        amount: 1,   unitLabel: '4–5 raw almonds' }
       ]
     }
-  },
-  tue: {
-    breakfast: "Toast (Dave's) + peanut butter + whey shake",
-    lunch: 'Burrito bowl — black beans + tofu + brown rice',
-    snack: 'Apple + 2 tbsp almond butter',
-    dinner: 'Red lentil soup + salad + 1 slice bread',
-    items: {
-      breakfast: [
-        { foodId: 'bread_daves', amount: 2, unitLabel: '2 slices' },
-        { foodId: 'peanut_butter', amount: 2, unitLabel: '2 tbsp' },
-        { foodId: 'whey_scoop', amount: 1, unitLabel: '1 scoop' },
-        { foodId: 'banana', amount: 1, unitLabel: '1 medium' }
-      ],
-      lunch: [
-        { foodId: 'rice_cooked', amount: 130, unitLabel: 'brown rice (~130g)' },
-        { foodId: 'black_beans', amount: 130, unitLabel: '(~130g)' },
-        { foodId: 'tofu_firm', amount: 100, unitLabel: '½ cup pan-seared' },
-        { foodId: 'avocado', amount: 0.25, unitLabel: '¼ avocado' },
-        { foodId: 'greek_yogurt', amount: 60, unitLabel: '2 tbsp sour cream/yogurt' }
-      ],
-      snack: [
-        { foodId: 'peanut_butter', amount: 2, unitLabel: '2 tbsp almond butter' }
-      ],
-      dinner: [
-        { foodId: 'dal_generic', amount: 300, unitLabel: 'red lentil soup, 2 cups' },
-        { foodId: 'bread_daves', amount: 1, unitLabel: '1 slice' }
+  ],
+
+  breakfast: [
+    {
+      id: 'bfst_oats',
+      label: 'Option A — Overnight Oats',
+      items: [
+        { foodId: 'oats_dry',           amount: 75,  unitLabel: '75g rolled oats' },
+        { foodId: 'almond_milk',        amount: 200, unitLabel: '200ml almond milk' },
+        { foodId: 'whey_scoop',         amount: 1,   unitLabel: '1 scoop whey (choc)' },
+        { foodId: 'chia_seeds',         amount: 1,   unitLabel: '1 tbsp chia seeds' },
+        { foodId: 'peanut_butter',      amount: 1,   unitLabel: '1 tbsp peanut butter' },
+        { foodId: 'banana',             amount: 0.5, unitLabel: '½ banana mashed' },
+        { foodId: 'mango_berries_frozen',amount:1,   unitLabel: '½ cup fruit topping' }
+      ]
+    },
+    {
+      id: 'bfst_toast',
+      label: 'Option B — Toast',
+      items: [
+        { foodId: 'bread_daves',   amount: 2, unitLabel: "2 slices Dave's Killer Bread" },
+        { foodId: 'peanut_butter', amount: 2, unitLabel: '2 tbsp natural peanut butter' },
+        { foodId: 'whey_scoop',    amount: 1, unitLabel: '1 scoop whey (shaken w/ water)' },
+        { foodId: 'apple',         amount: 1, unitLabel: '1 medium apple or banana' }
+      ]
+    },
+    {
+      id: 'bfst_smoothie',
+      label: 'Option C — Smoothie',
+      items: [
+        { foodId: 'whey_scoop',          amount: 1,   unitLabel: '1 scoop whey' },
+        { foodId: 'banana',              amount: 0.5, unitLabel: '½ banana' },
+        { foodId: 'mango_berries_frozen',amount: 1,   unitLabel: '½ cup frozen mango/berries' },
+        { foodId: 'chia_seeds',          amount: 1,   unitLabel: '1 tbsp chia seeds' },
+        { foodId: 'peanut_butter',       amount: 0.5, unitLabel: '½ tbsp peanut butter' },
+        { foodId: 'oats_dry',            amount: 25,  unitLabel: '25g rolled oats (blended)' },
+        { foodId: 'almond_milk',         amount: 200, unitLabel: '150–200ml water/almond milk' }
       ]
     }
-  },
-  wed: {
-    breakfast: 'Overnight oats + whey + blueberries',
-    lunch: 'Chana masala + brown rice + yogurt',
-    snack: 'No Cow protein bar',
-    dinner: 'Soya chunks sabzi + 2 rotis + salad',
-    items: {
-      breakfast: [
-        { foodId: 'oats_dry', amount: 75, unitLabel: '75g' },
-        { foodId: 'almond_milk', amount: 200, unitLabel: '200ml' },
-        { foodId: 'whey_scoop', amount: 1, unitLabel: '1 scoop' },
-        { foodId: 'mango_berries_frozen', amount: 1, unitLabel: '½ cup blueberries' }
-      ],
-      lunch: [
-        { foodId: 'rice_cooked', amount: 130, unitLabel: 'brown rice (~130g)' },
-        { foodId: 'chickpeas', amount: 150, unitLabel: 'chana masala (~150g)' },
-        { foodId: 'greek_yogurt', amount: 120, unitLabel: '½ cup' }
-      ],
-      snack: [
-        { foodId: 'protein_bar', amount: 1, unitLabel: '1 bar' }
-      ],
-      dinner: [
-        { foodId: 'soya_chunks_dry', amount: 40, unitLabel: 'sabzi (~40g dry)' },
-        { foodId: 'roti', amount: 2, unitLabel: '2 pieces' }
+  ],
+
+  lunch: [
+    {
+      id: 'lunch_indian',
+      label: 'Indian style (3–4×/week)',
+      items: [
+        { foodId: 'rice_cooked',  amount: 150, unitLabel: '¾ cup cooked rice' },
+        { foodId: 'dal_generic',  amount: 150, unitLabel: 'dal / rajma / chana curry' },
+        { foodId: 'greek_yogurt', amount: 120, unitLabel: '½ cup dahi / yogurt' },
+        { foodId: 'salad_side',   amount: 1,   unitLabel: 'mixed veg sabzi' }
+      ]
+    },
+    {
+      id: 'lunch_indian_soya',
+      label: 'Indian style — Soya chunks (priority pick)',
+      items: [
+        { foodId: 'rice_cooked',        amount: 150, unitLabel: '¾ cup cooked rice' },
+        { foodId: 'soya_chunks_dry',    amount: 40,  unitLabel: 'soya chunks curry (~40g dry)' },
+        { foodId: 'greek_yogurt',       amount: 120, unitLabel: '½ cup dahi' }
+      ]
+    },
+    {
+      id: 'lunch_american',
+      label: 'American style — Burrito bowl (1–2×/week)',
+      items: [
+        { foodId: 'rice_cooked',    amount: 130, unitLabel: 'brown rice' },
+        { foodId: 'black_beans',    amount: 130, unitLabel: '½ cup canned black beans' },
+        { foodId: 'tofu_firm',      amount: 100, unitLabel: '½ cup pan-seared tofu' },
+        { foodId: 'avocado',        amount: 0.25,unitLabel: '¼ avocado' },
+        { foodId: 'greek_yogurt',   amount: 60,  unitLabel: '2 tbsp Greek yogurt / sour cream' },
+        { foodId: 'salad_side',     amount: 1,   unitLabel: 'salsa + shredded lettuce' }
+      ]
+    },
+    {
+      id: 'lunch_hybrid',
+      label: 'Hybrid power bowl (anytime)',
+      items: [
+        { foodId: 'quinoa_cooked', amount: 90,  unitLabel: '½ cup quinoa' },
+        { foodId: 'rice_cooked',   amount: 90,  unitLabel: '½ cup brown rice' },
+        { foodId: 'chickpeas',     amount: 80,  unitLabel: '½ cup chickpeas' },
+        { foodId: 'tofu_firm',     amount: 100, unitLabel: '100g pan-fried tofu (Indian spices)' },
+        { foodId: 'spinach',       amount: 1,   unitLabel: 'spinach / kale' },
+        { foodId: 'tahini',        amount: 1,   unitLabel: '1 tbsp tahini or lemon-cumin dressing' }
       ]
     }
-  },
-  thu: {
-    breakfast: 'Smoothie — whey + banana + almond milk',
-    lunch: 'Hybrid power bowl — quinoa + chickpeas + tofu + spinach',
-    snack: 'Apple + peanut butter',
-    dinner: 'Dal makhani (low fat) + 2 rotis + cucumber salad',
-    items: {
-      breakfast: [
-        { foodId: 'whey_scoop', amount: 1, unitLabel: '1 scoop' },
-        { foodId: 'banana', amount: 1, unitLabel: '1 banana' },
-        { foodId: 'almond_milk', amount: 200, unitLabel: '200ml' },
-        { foodId: 'chia_seeds', amount: 1, unitLabel: '1 tbsp' },
-        { foodId: 'oats_dry', amount: 25, unitLabel: '25g' }
-      ],
-      lunch: [
-        { foodId: 'quinoa_cooked', amount: 90, unitLabel: '½ cup' },
-        { foodId: 'rice_cooked', amount: 90, unitLabel: '½ cup brown rice' },
-        { foodId: 'chickpeas', amount: 80, unitLabel: '½ cup' },
-        { foodId: 'tofu_firm', amount: 100, unitLabel: '100g pan-fried' },
-        { foodId: 'spinach', amount: 1, unitLabel: '1 cup' },
-        { foodId: 'tahini', amount: 1, unitLabel: '1 tbsp' }
-      ],
-      snack: [
-        { foodId: 'peanut_butter', amount: 1, unitLabel: '1 tbsp' }
-      ],
-      dinner: [
-        { foodId: 'dal_generic', amount: 220, unitLabel: 'dal makhani, low fat' },
-        { foodId: 'roti', amount: 2, unitLabel: '2 pieces' }
+  ],
+
+  snack: [
+    {
+      id: 'snack_bar',
+      label: 'Protein bar',
+      items: [
+        { foodId: 'protein_bar', amount: 1, unitLabel: '1 No Cow or ALOHA bar' }
+      ]
+    },
+    {
+      id: 'snack_fruit_nut',
+      label: 'Fruit + nut butter',
+      items: [
+        { foodId: 'apple',         amount: 1, unitLabel: '1 apple or orange' },
+        { foodId: 'peanut_butter', amount: 2, unitLabel: '2 tbsp nut butter' }
+      ]
+    },
+    {
+      id: 'snack_almonds',
+      label: 'Fruit + almonds',
+      items: [
+        { foodId: 'apple',   amount: 1, unitLabel: '1 apple' },
+        { foodId: 'almonds', amount: 5, unitLabel: '5 pieces almonds' }
       ]
     }
-  },
-  fri: {
-    breakfast: 'Overnight oats + whey + strawberries',
-    lunch: 'Rajma + rice + dahi',
-    snack: 'No Cow protein bar',
-    dinner: 'Low-fat paneer tikka (80g) + quinoa + sabzi',
-    items: {
-      breakfast: [
-        { foodId: 'oats_dry', amount: 75, unitLabel: '75g' },
-        { foodId: 'almond_milk', amount: 200, unitLabel: '200ml' },
-        { foodId: 'whey_scoop', amount: 1, unitLabel: '1 scoop' },
-        { foodId: 'mango_berries_frozen', amount: 1, unitLabel: '½ cup strawberries' }
-      ],
-      lunch: [
-        { foodId: 'rajma', amount: 150, unitLabel: '(~150g)' },
-        { foodId: 'rice_cooked', amount: 150, unitLabel: '¾ cup' },
-        { foodId: 'greek_yogurt', amount: 120, unitLabel: '½ cup dahi' }
-      ],
-      snack: [
-        { foodId: 'protein_bar', amount: 1, unitLabel: '1 bar' }
-      ],
-      dinner: [
-        { foodId: 'paneer_lowfat', amount: 80, unitLabel: '80g tikka' },
-        { foodId: 'quinoa_cooked', amount: 90, unitLabel: '½ cup' }
+  ],
+
+  dinner: [
+    {
+      id: 'dinner_indian_tofu',
+      label: 'Indian — Tofu bhurji + dal + roti',
+      items: [
+        { foodId: 'tofu_firm',    amount: 100, unitLabel: '100g tofu bhurji' },
+        { foodId: 'roti',         amount: 2,   unitLabel: '2 whole wheat rotis' },
+        { foodId: 'dal_toor',     amount: 200, unitLabel: '1.5 cups dal' },
+        { foodId: 'salad_side',   amount: 1,   unitLabel: 'large salad' }
       ]
-    }
-  },
-  sat: {
-    breakfast: 'Toast + peanut butter + banana + whey shake',
-    lunch: 'Pinto bean + tofu burrito bowl',
-    snack: 'Apple + almonds',
-    dinner: 'Soya chunks + mixed dal + roti + salad',
-    items: {
-      breakfast: [
-        { foodId: 'bread_daves', amount: 2, unitLabel: '2 slices' },
-        { foodId: 'peanut_butter', amount: 2, unitLabel: '2 tbsp' },
-        { foodId: 'banana', amount: 1, unitLabel: '1 banana' },
-        { foodId: 'whey_scoop', amount: 1, unitLabel: '1 scoop' }
-      ],
-      lunch: [
-        { foodId: 'red_pinto_beans', amount: 130, unitLabel: '(~130g)' },
-        { foodId: 'tofu_firm', amount: 100, unitLabel: '100g' },
-        { foodId: 'rice_cooked', amount: 130, unitLabel: 'brown rice' }
-      ],
-      snack: [
-        { foodId: 'almonds', amount: 5, unitLabel: '5 pieces' }
-      ],
-      dinner: [
-        { foodId: 'soya_chunks_dry', amount: 35, unitLabel: '(~35g dry)' },
-        { foodId: 'dal_generic', amount: 150, unitLabel: 'mixed dal' },
-        { foodId: 'roti', amount: 1, unitLabel: '1 piece' }
+    },
+    {
+      id: 'dinner_indian_paneer',
+      label: 'Indian — Low-fat paneer tikka + quinoa',
+      items: [
+        { foodId: 'paneer_lowfat', amount: 80,  unitLabel: '80g low-fat paneer tikka' },
+        { foodId: 'quinoa_cooked', amount: 120, unitLabel: '½ cup quinoa' },
+        { foodId: 'salad_side',    amount: 1,   unitLabel: 'vegetable sabzi' }
       ]
-    }
-  },
-  sun: {
-    breakfast: 'Overnight oats + whey + chia + peanut butter',
-    lunch: 'Chole (chickpeas) + brown rice + dahi',
-    snack: 'No Cow bar or fruit + nut butter',
-    dinner: 'Tofu stir-fry + brown rice + steamed broccoli',
-    items: {
-      breakfast: [
-        { foodId: 'oats_dry', amount: 75, unitLabel: '75g' },
-        { foodId: 'whey_scoop', amount: 1, unitLabel: '1 scoop' },
-        { foodId: 'chia_seeds', amount: 1, unitLabel: '1 tbsp' },
-        { foodId: 'peanut_butter', amount: 1, unitLabel: '1 tbsp' }
-      ],
-      lunch: [
-        { foodId: 'chickpeas', amount: 150, unitLabel: 'chole (~150g)' },
+    },
+    {
+      id: 'dinner_indian_soya',
+      label: 'Indian — Soya chunks sabzi + roti',
+      items: [
+        { foodId: 'soya_chunks_dry', amount: 35, unitLabel: 'soya sabzi (~35g dry)' },
+        { foodId: 'roti',            amount: 2,  unitLabel: '2 rotis' },
+        { foodId: 'salad_side',      amount: 1,  unitLabel: 'large salad' }
+      ]
+    },
+    {
+      id: 'dinner_indian_dal_makhani',
+      label: 'Indian — Dal makhani (low fat) + roti',
+      items: [
+        { foodId: 'dal_masoor',  amount: 220, unitLabel: 'dal makhani, low fat' },
+        { foodId: 'roti',        amount: 2,   unitLabel: '2 rotis' },
+        { foodId: 'cucumber',    amount: 100, unitLabel: 'cucumber salad' }
+      ]
+    },
+    {
+      id: 'dinner_american_lentil',
+      label: 'American — Red lentil soup + bread',
+      items: [
+        { foodId: 'red_lentils_dry', amount: 80,  unitLabel: 'red lentil soup, 2 cups (~80g dry)' },
+        { foodId: 'bread_daves',     amount: 1,   unitLabel: '1 slice Dave\'s Killer Bread' },
+        { foodId: 'salad_side',      amount: 1,   unitLabel: 'side salad, olive oil dressing' }
+      ]
+    },
+    {
+      id: 'dinner_tofu_stirfry',
+      label: 'American — Tofu stir-fry + brown rice + broccoli',
+      items: [
+        { foodId: 'tofu_firm',   amount: 100, unitLabel: '100g tofu stir-fry' },
         { foodId: 'rice_cooked', amount: 130, unitLabel: 'brown rice' },
-        { foodId: 'greek_yogurt', amount: 120, unitLabel: '½ cup dahi' }
-      ],
-      snack: [
-        { foodId: 'protein_bar', amount: 1, unitLabel: '1 bar' }
-      ],
-      dinner: [
-        { foodId: 'tofu_firm', amount: 100, unitLabel: '100g stir-fry' },
-        { foodId: 'rice_cooked', amount: 130, unitLabel: 'brown rice' }
+        { foodId: 'broccoli',    amount: 100, unitLabel: 'steamed broccoli' }
       ]
     }
-  }
+  ]
 };
 
+// ============================================================
+// WEEKLY DEFAULT CHOICES — which option is shown by default each day.
+// User can override any day at any time via the meal picker.
+// Keys match MEAL_OPTIONS option IDs above.
+// ============================================================
+const WEEKLY_DEFAULT_CHOICES = {
+  mon: { preworkout: 'pre_standard', breakfast: 'bfst_oats',     lunch: 'lunch_indian_soya',  snack: 'snack_bar',       dinner: 'dinner_indian_tofu' },
+  tue: { preworkout: 'pre_standard', breakfast: 'bfst_toast',    lunch: 'lunch_american',     snack: 'snack_fruit_nut', dinner: 'dinner_american_lentil' },
+  wed: { preworkout: 'pre_standard', breakfast: 'bfst_oats',     lunch: 'lunch_indian',       snack: 'snack_bar',       dinner: 'dinner_indian_soya' },
+  thu: { preworkout: 'pre_standard', breakfast: 'bfst_smoothie', lunch: 'lunch_hybrid',       snack: 'snack_fruit_nut', dinner: 'dinner_indian_dal_makhani' },
+  fri: { preworkout: 'pre_standard', breakfast: 'bfst_oats',     lunch: 'lunch_indian',       snack: 'snack_bar',       dinner: 'dinner_indian_paneer' },
+  sat: { preworkout: 'pre_standard', breakfast: 'bfst_toast',    lunch: 'lunch_american',     snack: 'snack_almonds',   dinner: 'dinner_indian_soya' },
+  sun: { preworkout: 'pre_standard', breakfast: 'bfst_oats',     lunch: 'lunch_indian',       snack: 'snack_bar',       dinner: 'dinner_tofu_stirfry' }
+};
+
+// ============================================================
+// SUPPLEMENT SCHEDULE
+// ============================================================
 const SUPPLEMENT_SCHEDULE = [
   { time: '6:30am', label: 'Pre-Workout', items: 'RYZE coffee + ½ banana + almonds (no medication)' },
-  { time: '9:30am', label: 'Breakfast', items: 'Minoxidil 2.5mg + D3 5000 IU + K2 100mcg + sublingual B12' },
-  { time: '8:00pm', label: 'Dinner', items: 'Finasteride 1mg + B-Complex' }
+  { time: '9:30am', label: 'Breakfast',   items: 'Minoxidil 2.5mg + D3 5000 IU + K2 100mcg + sublingual B12' },
+  { time: '8:00pm', label: 'Dinner',      items: 'Finasteride 1mg + B-Complex' }
 ];
 
 const NON_NEGOTIABLE_RULES = [
-  'Hit 120g protein daily. Soya chunks 3–4x/week is what gets you there.',
+  'Hit 120g protein daily. Soya chunks 3–4×/week is what gets you there.',
   'Rice portion = ¾ cup cooked maximum at lunch — biggest lever for insulin resistance and SHBG.',
   'No added sugar, no white bread, no fried food.',
   'Drink 3–3.5 litres of water daily.',
