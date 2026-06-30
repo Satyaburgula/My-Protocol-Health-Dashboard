@@ -64,6 +64,7 @@ function getDayLog(dateKey) {
   if (!d.customWorkouts) d.customWorkouts = [];
   if (!d.customFoods) d.customFoods = {};
   if (!d.meals) d.meals = {};
+  if (!d.mealChoices) d.mealChoices = {};
   if (d.mealScaleFactor === undefined) d.mealScaleFactor = null;
   return d;
 }
@@ -255,10 +256,12 @@ function getFood(foodId) {
 function computeItemMacros(item) {
   const food = getFood(item.foodId);
   if (!food) return { cal: 0, protein: 0, carbs: 0, fat: 0 };
-  // amount is interpreted relative to food.unit; if unit is "100g" treat amount as grams/100
+  // amount is interpreted relative to food.unit
+  // '100g' or '100ml' → amount is grams/ml, divide by 100 to get factor
+  // anything else (1 scoop, 1 tbsp, 1 piece, etc.) → amount is multiples of that unit
   let factor;
-  if (food.unit === '100g') factor = item.amount / 100;
-  else factor = item.amount; // unit-based (1 scoop, 1 tbsp, 1 piece etc.) -> amount is multiples of that unit
+  if (food.unit === '100g' || food.unit === '100ml') factor = item.amount / 100;
+  else factor = item.amount;
   return {
     cal: Math.round(food.cal * factor),
     protein: +(food.protein * factor).toFixed(1),
@@ -267,14 +270,52 @@ function computeItemMacros(item) {
   };
 }
 
+// Get the chosen option ID for a meal on a given day
+function getMealChoice(dateKey, dayId, mealId) {
+  const log = getDayLog(dateKey);
+  if (log.mealChoices && log.mealChoices[mealId]) return log.mealChoices[mealId];
+  return (WEEKLY_DEFAULT_CHOICES[dayId] && WEEKLY_DEFAULT_CHOICES[dayId][mealId])
+    ? WEEKLY_DEFAULT_CHOICES[dayId][mealId]
+    : (MEAL_OPTIONS[mealId] && MEAL_OPTIONS[mealId][0] ? MEAL_OPTIONS[mealId][0].id : null);
+}
+
+// Get the option object for a meal on a given day
+function getMealOption(dateKey, dayId, mealId) {
+  const choiceId = getMealChoice(dateKey, dayId, mealId);
+  return MEAL_OPTIONS[mealId] ? MEAL_OPTIONS[mealId].find(o => o.id === choiceId) || MEAL_OPTIONS[mealId][0] : null;
+}
+
+// Get the live items array for a meal (user edits/swaps are layered on top of the option's base items)
 function getMealItems(dateKey, dayId, mealId) {
   const log = getDayLog(dateKey);
-  if (log.meals[mealId] && log.meals[mealId].items) return log.meals[mealId].items;
-  // fall back to plan default
-  const plan = WEEKLY_MEAL_PLAN[dayId];
-  const defaultItems = (plan && plan.items && plan.items[mealId]) ? plan.items[mealId].map(i => ({...i})) : [];
-  log.meals[mealId] = { items: defaultItems };
-  return defaultItems;
+  // if user has manually edited this meal's items (swaps/adds), use those
+  if (log.meals[mealId] && log.meals[mealId].items && log.meals[mealId].lockedToChoice) {
+    return log.meals[mealId].items;
+  }
+  // otherwise build fresh from the chosen option (deep copy so mutations don't affect template)
+  const option = getMealOption(dateKey, dayId, mealId);
+  const baseItems = option ? option.items.map(i => ({ ...i })) : [];
+  log.meals[mealId] = { items: baseItems, lockedToChoice: getMealChoice(dateKey, dayId, mealId) };
+  return baseItems;
+}
+
+// Switch the meal option for today — resets that meal's items to the new option's template
+function switchMealOption(mealId, optionId) {
+  const dateKey = todayKey();
+  const dayId = todayDayId();
+  const log = getDayLog(dateKey);
+  if (!log.mealChoices) log.mealChoices = {};
+  log.mealChoices[mealId] = optionId;
+  // reset items so they come fresh from the new option
+  delete log.meals[mealId];
+  saveState();
+  renderEat();
+  if (currentView === 'today') renderToday();
+  // re-apply scaling since meal base has changed
+  applyMealAutoScale(dateKey, dayId);
+  saveState();
+  const option = MEAL_OPTIONS[mealId] ? MEAL_OPTIONS[mealId].find(o => o.id === optionId) : null;
+  showToast(option ? `Switched to ${option.label}` : 'Meal updated');
 }
 
 function computeMealTotals(items) {
@@ -729,12 +770,32 @@ function renderEat() {
 
   const list = document.getElementById('eatMealList');
   const isToday = selectedEatDay === todayDayId();
-  const useDateKey = isToday ? dateKey : 'plan-preview-' + selectedEatDay; // plan-only preview for non-today days
 
-  list.innerHTML = MEAL_WINDOWS.map(mw => {
-    const items = isToday ? getMealItems(dateKey, selectedEatDay, mw.id) :
-      ((WEEKLY_MEAL_PLAN[selectedEatDay].items[mw.id] || []).map(i => ({...i})));
+  // show scale factor badge if meals are currently scaled
+  const log = getDayLog(dateKey);
+  const scaleNote = isToday && log.mealScaleFactor && log.mealScaleFactor > 1
+    ? `<div class="meal-note" style="margin-bottom:14px">
+        🏋️ Meals scaled ×${log.mealScaleFactor} for today's training — carb/fat portions adjusted. Protein items unchanged.
+       </div>` : '';
+
+  list.innerHTML = scaleNote + MEAL_WINDOWS.map(mw => {
+    const options = MEAL_OPTIONS[mw.id] || [];
+    const choiceId = getMealChoice(dateKey, selectedEatDay, mw.id);
+    const items = isToday
+      ? getMealItems(dateKey, selectedEatDay, mw.id)
+      : (getMealOption(dateKey, selectedEatDay, mw.id) || { items: [] }).items.map(i => ({...i}));
     const totals = computeMealTotals(items);
+
+    // option selector chips — only shown when there are multiple options
+    const optionChips = options.length > 1
+      ? `<div class="option-chips">
+          ${options.map(opt => `
+            <button class="option-chip ${opt.id === choiceId ? 'active' : ''}"
+              ${isToday ? `onclick="switchMealOption('${mw.id}', '${opt.id}')"` : 'disabled'}
+            >${opt.label}</button>
+          `).join('')}
+         </div>` : '';
+
     return `
     <div class="card meal-card">
       <div class="meal-head">
@@ -747,15 +808,23 @@ function renderEat() {
         <div class="meal-kcal">${Math.round(totals.cal)} kcal</div>
       </div>
       ${mw.note ? `<div class="meal-note">${mw.note}</div>` : ''}
+      ${optionChips}
       ${items.map((item, idx) => {
         const food = getFood(item.foodId);
         const m = computeItemMacros(item);
-        return `<div class="food-item-row">
-          <span class="food-item-name">${food ? food.name : item.foodId}<span class="food-item-amt">${item.unitLabel || ''}</span></span>
+        const isScaled = !!item._scaledFrom;
+        return `<div class="food-item-row ${isScaled ? 'scaled-row' : ''}">
+          <span class="food-item-name">${food ? food.name : item.foodId}
+            <span class="food-item-amt">${item.unitLabel || ''}</span>
+          </span>
           <span class="food-item-macros">${m.cal}kcal · ${m.protein}p</span>
           ${isToday ? `<span class="food-item-actions">
-            <button class="icon-btn" onclick="openSwapModal('${mw.id}', ${idx})" aria-label="Swap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg></button>
-            <button class="icon-btn" onclick="removeMealItem('${mw.id}', ${idx})" aria-label="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg></button>
+            <button class="icon-btn" onclick="openSwapModal('${mw.id}', ${idx})" aria-label="Swap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>
+            </button>
+            <button class="icon-btn" onclick="removeMealItem('${mw.id}', ${idx})" aria-label="Remove">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6"/></svg>
+            </button>
           </span>` : ''}
         </div>`;
       }).join('')}
@@ -861,6 +930,10 @@ function confirmSwap() {
 // ============================================================
 // ADD FOOD MODAL — append a new item (from DB or fully custom)
 // ============================================================
+// ADD FOOD MODAL — append a new item (from built-in DB, personal
+// library, or fully custom). Custom foods saved per-100g so they
+// can be reused tomorrow by name with any gram amount.
+// ============================================================
 let addFoodContext = { mealId: null, selectedFoodId: null, mode: 'search' };
 
 function openAddFoodModal(mealId) {
@@ -875,29 +948,48 @@ function openAddFoodModal(mealId) {
 function closeAddFoodModal() {
   document.getElementById('addFoodModalBackdrop').classList.remove('open');
 }
+
+// Merge built-in FOOD_DB with personal library for unified search
+function getAllSearchableFoods() {
+  const builtIn = FOOD_DB.map(f => ({ ...f, source: 'builtin' }));
+  const custom = Object.values(state.customFoodDefs || {}).map(f => ({ ...f, source: 'custom' }));
+  return [...custom, ...builtIn]; // personal library first so it appears at top
+}
+
 function renderAddFoodResults() {
   const q = document.getElementById('addFoodSearchInput').value.toLowerCase().trim();
-  const results = FOOD_DB.filter(f => !q || f.name.toLowerCase().includes(q));
+  const all = getAllSearchableFoods();
+  const results = q ? all.filter(f => f.name.toLowerCase().includes(q)) : all;
   const list = document.getElementById('addFoodResultsList');
-  list.innerHTML = results.map(f => `
+  if (!results.length) {
+    list.innerHTML = `<div class="empty-state">No matches — add it as a custom food below.</div>`;
+    return;
+  }
+  list.innerHTML = results.slice(0, 30).map(f => `
     <div class="food-result-row ${addFoodContext.selectedFoodId === f.id ? 'selected' : ''}">
       <div>
-        <div class="food-result-name">${f.name}</div>
-        <div class="food-result-macro">${f.cal}kcal · ${f.protein}p · ${f.carbs}c · ${f.fat}f per ${f.unit}</div>
+        <div class="food-result-name">${f.name}${f.source === 'custom' ? ' <span style="color:var(--accent);font-size:10px;font-weight:700">MY FOOD</span>' : ''}</div>
+        <div class="food-result-macro">${f.cal}kcal · ${f.protein}g p · ${f.carbs}g c · ${f.fat}g f per ${f.unit}</div>
       </div>
       <button class="food-result-btn" onclick="selectAddFoodItem('${f.id}')">Select</button>
     </div>
-  `).join('') || `<div class="empty-state">No matches — use "Add a custom food" below.</div>`;
+  `).join('');
 }
+
 function selectAddFoodItem(foodId) {
   addFoodContext.selectedFoodId = foodId;
   addFoodContext.mode = 'search';
   document.getElementById('customFoodFields').style.display = 'none';
   const food = getFood(foodId);
-  document.getElementById('addFoodUnitHint').textContent = `Amount is in multiples of: ${food.unit}${food.unit === '100g' ? ' (e.g. enter 150 for 150g)' : ' (e.g. enter 1 for one ' + food.unit + ')'}`;
+  if (!food) return;
+  const hint = food.unit === '100g'
+    ? `Enter grams — e.g. 150 for 150g (${food.cal} kcal per 100g)`
+    : `Enter quantity — 1 = one ${food.unit} · ${food.cal} kcal each`;
+  document.getElementById('addFoodUnitHint').textContent = hint;
   document.getElementById('addFoodAmountInput').value = food.unit === '100g' ? 100 : 1;
   renderAddFoodResults();
 }
+
 function toggleCustomFoodMode() {
   addFoodContext.mode = 'custom';
   addFoodContext.selectedFoodId = null;
@@ -905,42 +997,74 @@ function toggleCustomFoodMode() {
   document.getElementById('addFoodUnitHint').textContent = '';
   renderAddFoodResults();
 }
+
 function confirmAddFood() {
   const dateKey = todayKey();
   const items = getMealItems(dateKey, selectedEatDay, addFoodContext.mealId);
 
   if (addFoodContext.mode === 'custom') {
     const name = document.getElementById('customFoodName').value.trim();
-    const cal = parseFloat(document.getElementById('customFoodCal').value) || 0;
-    const protein = parseFloat(document.getElementById('customFoodProtein').value) || 0;
-    const carbs = parseFloat(document.getElementById('customFoodCarbs').value) || 0;
-    const fat = parseFloat(document.getElementById('customFoodFat').value) || 0;
+    const totalCal     = parseFloat(document.getElementById('customFoodCal').value) || 0;
+    const totalProtein = parseFloat(document.getElementById('customFoodProtein').value) || 0;
+    const totalCarbs   = parseFloat(document.getElementById('customFoodCarbs').value) || 0;
+    const totalFat     = parseFloat(document.getElementById('customFoodFat').value) || 0;
+    const servingG     = parseFloat(document.getElementById('customFoodServingG').value) || 0;
+
     if (!name) { showToast('Name the food'); return; }
-    if (!cal) { showToast('Enter at least calories'); return; }
-    // register as a one-off custom food, persisted so it survives reload
-    const customId = 'custom_' + Date.now();
-    const customFood = { id: customId, name, unit: '1 serving', cal, protein, carbs, fat, category: 'custom' };
+    if (!totalCal) { showToast('Enter at least calories'); return; }
+
     if (!state.customFoodDefs) state.customFoodDefs = {};
+
+    // If a food with this exact name exists already, update it
+    const existingId = Object.keys(state.customFoodDefs).find(
+      id => state.customFoodDefs[id].name.toLowerCase() === name.toLowerCase()
+    );
+    const customId = existingId || ('custom_' + Date.now());
+
+    let customFood, addAmount, addUnit;
+    if (servingG > 0) {
+      // Convert to per-100g so tomorrow user just enters any gram weight
+      const f = 100 / servingG;
+      customFood = {
+        id: customId, name, unit: '100g', category: 'custom',
+        cal:     Math.round(totalCal * f),
+        protein: +((totalProtein * f).toFixed(1)),
+        carbs:   +((totalCarbs * f).toFixed(1)),
+        fat:     +((totalFat * f).toFixed(1))
+      };
+      addAmount = servingG;
+      addUnit   = `${servingG}g`;
+      showToast(`${name} saved — enter any gram amount next time`);
+    } else {
+      // No weight — store as a fixed single-serving entry
+      customFood = { id: customId, name, unit: '1 serving', category: 'custom',
+        cal: totalCal, protein: totalProtein, carbs: totalCarbs, fat: totalFat };
+      addAmount = 1;
+      addUnit   = '1 serving';
+      showToast(`${name} added`);
+    }
+
     state.customFoodDefs[customId] = customFood;
-    items.push({ foodId: customId, amount: 1, unitLabel: '1 serving', custom: true });
+    items.push({ foodId: customId, amount: addAmount, unitLabel: addUnit, custom: true });
+
   } else {
     if (!addFoodContext.selectedFoodId) { showToast('Pick a food or add a custom one'); return; }
     const amount = parseFloat(document.getElementById('addFoodAmountInput').value);
     if (!amount || amount <= 0) { showToast('Enter a valid amount'); return; }
     const food = getFood(addFoodContext.selectedFoodId);
     items.push({
-      foodId: food.id,
-      amount,
+      foodId: food.id, amount,
       unitLabel: food.unit === '100g' ? `${amount}g` : `${amount} × ${food.unit}`
     });
+    showToast(`Added ${food.name}`);
   }
 
   saveState();
   closeAddFoodModal();
-  showToast('Added to meal');
   renderEat();
   if (currentView === 'today') renderToday();
 }
+
 
 // ============================================================
 // PROGRESS VIEW
