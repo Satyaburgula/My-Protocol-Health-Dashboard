@@ -111,7 +111,89 @@ html, body {
 
 body {
   min-height: 100vh;
+  position: relative;
 }
+
+/* subtle ambient background glow — calm, low-opacity, fixed so it doesn't scroll/distract */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 600px 400px at 15% 0%, var(--accent-soft), transparent 60%),
+    radial-gradient(ellipse 500px 400px at 100% 30%, var(--good-soft), transparent 55%),
+    radial-gradient(ellipse 500px 500px at 0% 100%, var(--info) 8%, transparent 50%);
+  opacity: 0.5;
+}
+body.light-mode::before { opacity: 0.35; }
+
+/* scattered stars/dots — warm-toned, gently twinkling, very subtle */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.6px 1.6px at 8% 12%,  var(--text-primary), transparent),
+    radial-gradient(1.2px 1.2px at 22% 28%, var(--accent), transparent),
+    radial-gradient(1.4px 1.4px at 38% 8%,  var(--text-primary), transparent),
+    radial-gradient(1px 1px   at 55% 22%,   var(--good), transparent),
+    radial-gradient(1.6px 1.6px at 70% 14%, var(--text-primary), transparent),
+    radial-gradient(1.2px 1.2px at 85% 30%, var(--accent), transparent),
+    radial-gradient(1.4px 1.4px at 12% 45%, var(--text-primary), transparent),
+    radial-gradient(1px 1px   at 30% 58%,   var(--good), transparent),
+    radial-gradient(1.6px 1.6px at 48% 42%, var(--text-primary), transparent),
+    radial-gradient(1.2px 1.2px at 65% 55%, var(--accent), transparent),
+    radial-gradient(1.4px 1.4px at 80% 48%, var(--text-primary), transparent),
+    radial-gradient(1px 1px   at 92% 62%,   var(--good), transparent),
+    radial-gradient(1.6px 1.6px at 18% 72%, var(--text-primary), transparent),
+    radial-gradient(1.2px 1.2px at 40% 82%, var(--accent), transparent),
+    radial-gradient(1.4px 1.4px at 60% 75%, var(--text-primary), transparent),
+    radial-gradient(1px 1px   at 75% 88%,   var(--good), transparent),
+    radial-gradient(1.6px 1.6px at 95% 80%, var(--text-primary), transparent);
+  background-repeat: no-repeat;
+  opacity: 0.35;
+  animation: twinkle 7s ease-in-out infinite;
+}
+body.light-mode::after { opacity: 0.22; }
+@keyframes twinkle {
+  0%, 100% { opacity: 0.22; }
+  50%      { opacity: 0.42; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body::after { animation: none; }
+}
+
+.app-header, .view, .tabbar { position: relative; z-index: 1; }
+
+/* smooth view transitions */
+.view { animation: view-fade-in .35s ease; }
+@keyframes view-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .view { animation: none; }
+}
+
+/* cards gently settle in */
+.card { animation: card-settle .3s ease backwards; }
+.card:nth-child(1) { animation-delay: 0s; }
+.card:nth-child(2) { animation-delay: .03s; }
+.card:nth-child(3) { animation-delay: .06s; }
+.card:nth-child(4) { animation-delay: .09s; }
+@keyframes card-settle {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* greeting header */
+.greeting-block { margin-bottom: 16px; }
+.greeting-title { font-family: var(--font-display); font-size: 22px; font-weight: 600; }
+.greeting-line { font-size: 12.5px; color: var(--text-secondary); margin-top: 3px; }
 
 button { font-family: inherit; cursor: pointer; }
 input, select, textarea { font-family: inherit; }
@@ -303,6 +385,8 @@ label.field-label {
 .ring-bg { fill: none; stroke: var(--bg-input); stroke-width: 14; }
 .ring-fg { fill: none; stroke: var(--accent); stroke-width: 14; stroke-linecap: round; transition: stroke-dashoffset .5s ease, stroke .3s ease; }
 .ring-fg.over { stroke: var(--warn); }
+.ring-fg.goal-close { stroke: var(--good); animation: ring-pulse 2s ease-in-out infinite; }
+@keyframes ring-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
 .ring-center {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -663,16 +747,6 @@ label.field-label {
 .history-month-label { font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono); margin: 10px 0 6px; }
 
 /* ============================================================
-   MUSCLE GROUP HEATMAP
-   ============================================================ */
-.muscle-grid { display: flex; flex-direction: column; gap: 8px; }
-.muscle-row { display: flex; align-items: center; gap: 8px; }
-.muscle-name { font-size: 12.5px; min-width: 100px; color: var(--text-secondary); }
-.muscle-bar-wrap { flex: 1; height: 8px; background: var(--bg-input); border-radius: var(--radius-full); overflow: hidden; }
-.muscle-bar-fill { height: 100%; border-radius: var(--radius-full); transition: width .4s ease; }
-.muscle-vol-label { font-size: 11px; font-family: var(--font-mono); color: var(--text-tertiary); min-width: 28px; text-align: right; }
-
-/* ============================================================
    MEAL CONFIRMATION
    ============================================================ */
 .meal-confirm-row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
@@ -798,6 +872,7 @@ label.field-label {
 
 <!-- ============ TODAY ============ -->
 <main class="view active" id="view-today">
+  <div class="greeting-block" id="greetingBlock"></div>
   <div class="card ring-card">
     <div class="ring-wrap">
       <svg viewBox="0 0 220 220">
@@ -893,7 +968,7 @@ label.field-label {
   </div>
   <button class="btn btn-block" onclick="openActivityModal()" style="margin-bottom:14px">+ Log a workout not on this list</button>
 
-  <div class="card day-summary-card">
+  <div class="card day-summary-card" id="trainBurnCard">
     <div>
       <div class="l">Estimated burn today</div>
       <div class="v" id="trainDayBurn">0 kcal</div>
