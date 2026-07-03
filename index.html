@@ -42,6 +42,63 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Light theme overrides */
+body.light-mode {
+  --bg: #F5F3EF;
+  --bg-elevated: #EDEBE6;
+  --bg-card: #E8E5DF;
+  --bg-input: #DEDBD4;
+  --line: #CCC9C0;
+  --line-soft: #D8D5CE;
+  --text-primary: #1A1C1E;
+  --text-secondary: #5A6068;
+  --text-tertiary: #8A9099;
+  --accent-dim: #F5DFC0;
+  --accent-soft: #E8943A33;
+  --good-soft: #8FA88833;
+  --warn-soft: #C76B5C33;
+}
+
+/* Offline indicator */
+.offline-bar {
+  display: none;
+  background: var(--warn);
+  color: #fff;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px;
+  letter-spacing: 0.04em;
+}
+.offline-bar.visible { display: block; }
+.online-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--good);
+  font-family: var(--font-mono);
+  padding: 3px 8px;
+  background: var(--good-soft);
+  border-radius: var(--radius-full);
+}
+.online-badge::before {
+  content: ''; width: 6px; height: 6px;
+  border-radius: 50%; background: var(--good);
+  animation: pulse-dot 2s infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  background: none; border: none;
+  color: var(--text-tertiary);
+  width: 32px; height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
 html, body {
@@ -518,14 +575,224 @@ label.field-label {
 @media (min-width: 480px) {
   .ring-wrap { width: 240px; height: 240px; }
 }
+
+/* ============================================================
+   WATER TRACKER
+   ============================================================ */
+.water-track { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+.water-drop {
+  width: 36px; height: 36px; border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--bg-input); border: 1.5px solid var(--line);
+  cursor: pointer; transition: all .15s ease; flex-shrink: 0;
+}
+.water-drop.filled { background: var(--info); border-color: var(--info); }
+.water-drop:active { transform: rotate(-45deg) scale(0.9); }
+.water-goal-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-tertiary); margin-top: 8px; }
+
+/* ============================================================
+   MEDICATION CHECKLIST
+   ============================================================ */
+.med-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 11px 0; border-bottom: 1px solid var(--line-soft);
+}
+.med-item:last-child { border-bottom: none; }
+.med-info { flex: 1; }
+.med-name { font-size: 14px; font-weight: 600; }
+.med-time { font-size: 11.5px; color: var(--accent); font-family: var(--font-mono); margin-top: 2px; }
+.med-detail { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+.med-item.done .med-name { text-decoration: line-through; color: var(--text-tertiary); }
+
+/* ============================================================
+   DAILY SUMMARY
+   ============================================================ */
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.summary-cell {
+  background: var(--bg-input); border-radius: var(--radius-md);
+  padding: 12px; text-align: center;
+}
+.summary-cell .sv { font-family: var(--font-mono); font-size: 20px; font-weight: 600; }
+.summary-cell .sl { font-size: 10.5px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 3px; }
+.summary-cell.good-cell { background: var(--good-soft); }
+.summary-cell.warn-cell { background: var(--warn-soft); }
+
+/* ============================================================
+   REST TIMER
+   ============================================================ */
+.rest-timer-bar {
+  position: fixed; bottom: calc(78px + var(--safe-bottom)); left: 0; right: 0;
+  z-index: 25; display: none; justify-content: center; pointer-events: none;
+}
+.rest-timer-bar.active { display: flex; }
+.rest-timer-pill {
+  background: var(--bg-elevated); border: 1px solid var(--accent);
+  border-radius: var(--radius-full); padding: 10px 20px;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4); pointer-events: all;
+}
+.rest-timer-count { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--accent); min-width: 44px; }
+.rest-timer-label { font-size: 12px; color: var(--text-secondary); }
+.rest-timer-skip { background: none; border: none; color: var(--text-tertiary); font-size: 13px; padding: 4px 8px; }
+
+/* ============================================================
+   PROGRESSIVE OVERLOAD
+   ============================================================ */
+.overload-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--good-soft); color: var(--good);
+  border-radius: var(--radius-full); font-size: 11px; font-weight: 600;
+  padding: 3px 9px; margin-top: 4px;
+}
+.overload-badge.new-pr { background: var(--accent-soft); color: var(--accent); }
+
+/* ============================================================
+   WORKOUT HISTORY CALENDAR
+   ============================================================ */
+.history-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.history-day {
+  aspect-ratio: 1; border-radius: 6px; background: var(--bg-input);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-family: var(--font-mono); color: var(--text-tertiary);
+  position: relative;
+}
+.history-day.full { background: var(--good); color: #16191C; font-weight: 700; }
+.history-day.partial { background: var(--accent-soft); color: var(--accent); }
+.history-day.rest { background: var(--bg-input); opacity: 0.5; }
+.history-day.today-ring { box-shadow: 0 0 0 2px var(--accent); }
+.history-month-label { font-size: 11px; color: var(--text-tertiary); font-family: var(--font-mono); margin: 10px 0 6px; }
+
+/* ============================================================
+   MUSCLE GROUP HEATMAP
+   ============================================================ */
+.muscle-grid { display: flex; flex-direction: column; gap: 8px; }
+.muscle-row { display: flex; align-items: center; gap: 8px; }
+.muscle-name { font-size: 12.5px; min-width: 100px; color: var(--text-secondary); }
+.muscle-bar-wrap { flex: 1; height: 8px; background: var(--bg-input); border-radius: var(--radius-full); overflow: hidden; }
+.muscle-bar-fill { height: 100%; border-radius: var(--radius-full); transition: width .4s ease; }
+.muscle-vol-label { font-size: 11px; font-family: var(--font-mono); color: var(--text-tertiary); min-width: 28px; text-align: right; }
+
+/* ============================================================
+   MEAL CONFIRMATION
+   ============================================================ */
+.meal-confirm-row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+.meal-confirm-label { font-size: 12.5px; color: var(--text-secondary); }
+.confirm-btn {
+  font-size: 12px; font-weight: 600; padding: 6px 14px;
+  border-radius: var(--radius-full); border: 1.5px solid var(--line);
+  background: var(--bg-input); color: var(--text-secondary);
+}
+.confirm-btn.confirmed { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.unplanned-badge { background: var(--accent-soft); color: var(--accent); border-radius: var(--radius-sm); font-size: 10.5px; font-weight: 600; padding: 2px 7px; }
+
+/* ============================================================
+   MEAL PREP REMINDER
+   ============================================================ */
+.prep-banner {
+  background: linear-gradient(135deg, var(--accent-dim), var(--bg-card));
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 14px;
+}
+.prep-banner-title { font-family: var(--font-display); font-size: 17px; font-weight: 600; color: var(--accent); margin-bottom: 8px; }
+.prep-item { font-size: 13px; color: var(--text-secondary); padding: 5px 0; border-bottom: 1px solid var(--line-soft); display: flex; align-items: center; gap: 8px; }
+.prep-item:last-child { border-bottom: none; }
+
+/* ============================================================
+   BODY MEASUREMENTS
+   ============================================================ */
+.measure-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.measure-cell { background: var(--bg-input); border-radius: var(--radius-md); padding: 12px; }
+.measure-cell .mv { font-family: var(--font-mono); font-size: 18px; font-weight: 600; }
+.measure-cell .ml { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+.measure-cell .mdiff { font-size: 11px; margin-top: 4px; }
+.measure-cell .mdiff.loss { color: var(--good); }
+.measure-cell .mdiff.gain { color: var(--warn); }
+
+/* ============================================================
+   HAIR PROTOCOL TRACKER
+   ============================================================ */
+.hair-timeline { display: flex; flex-direction: column; gap: 0; position: relative; margin: 10px 0; }
+.hair-timeline::before {
+  content: ''; position: absolute; left: 15px; top: 0; bottom: 0;
+  width: 2px; background: var(--line);
+}
+.hair-milestone {
+  display: flex; align-items: flex-start; gap: 12px; padding: 10px 0;
+  position: relative;
+}
+.hair-dot {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; position: relative; z-index: 1;
+  background: var(--bg-card); border: 2px solid var(--line);
+}
+.hair-dot.reached { background: var(--good); border-color: var(--good); }
+.hair-dot.current { background: var(--accent); border-color: var(--accent); animation: pulse-accent 2s infinite; }
+.hair-dot.upcoming { background: var(--bg-input); border-color: var(--line-soft); }
+@keyframes pulse-accent { 0%,100%{box-shadow:0 0 0 0 rgba(232,148,58,.4)} 50%{box-shadow:0 0 0 6px rgba(232,148,58,0)} }
+.hair-milestone-info { padding-top: 4px; }
+.hair-milestone-title { font-size: 13.5px; font-weight: 600; }
+.hair-milestone-date { font-size: 11.5px; color: var(--text-tertiary); font-family: var(--font-mono); margin-top: 2px; }
+.hair-milestone-desc { font-size: 12px; color: var(--text-secondary); margin-top: 3px; line-height: 1.5; }
+.hair-day-count { font-family: var(--font-display); font-size: 48px; font-weight: 600; color: var(--accent); line-height: 1; }
+.hair-day-label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+/* ============================================================
+   ONBOARDING OVERLAY
+   ============================================================ */
+.onboarding-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 32px 24px; text-align: center;
+}
+.onboarding-overlay.hidden { display: none; }
+.onboarding-icon { font-size: 56px; margin-bottom: 20px; }
+.onboarding-title { font-family: var(--font-display); font-size: 28px; font-weight: 600; margin-bottom: 10px; }
+.onboarding-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 32px; max-width: 320px; }
+.onboarding-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 28px; }
+.onboarding-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.onboarding-dot.active { background: var(--accent); width: 24px; border-radius: 4px; }
+.onboarding-steps { display: none; }
 </style>
 </head>
 <body>
 
+<!-- Onboarding overlay -->
+<div class="onboarding-overlay hidden" id="onboardingOverlay">
+  <div class="onboarding-icon" id="onboardingIcon">💪</div>
+  <div class="onboarding-title" id="onboardingTitle">Welcome to Protocol</div>
+  <div class="onboarding-desc" id="onboardingDesc">Your personal health tracker built around your exact diet plan, exercise schedule, and hair protocol. Everything in one place.</div>
+  <div class="onboarding-dots" id="onboardingDots"></div>
+  <button class="btn btn-primary" style="min-width:180px" onclick="onboardingNext()" id="onboardingBtn">Get Started</button>
+  <button class="btn btn-ghost" style="margin-top:10px;font-size:12px" onclick="skipOnboarding()">Skip intro</button>
+</div>
+
+<!-- Rest timer floating bar -->
+<div class="rest-timer-bar" id="restTimerBar">
+  <div class="rest-timer-pill">
+    <div>
+      <div class="rest-timer-label">Rest</div>
+      <div class="rest-timer-count" id="restTimerCount">60</div>
+    </div>
+    <div style="width:1px;height:36px;background:var(--line)"></div>
+    <div>
+      <div class="rest-timer-label" id="restTimerExName">—</div>
+      <div style="font-size:11px;color:var(--text-tertiary)" id="restTimerNext">Up next: —</div>
+    </div>
+    <button class="rest-timer-skip" onclick="skipRestTimer()">Skip ›</button>
+  </div>
+</div>
+
+<div class="offline-bar" id="offlineBar">⚠ No internet — all your data is still saved locally</div>
 <header class="app-header">
   <div class="app-header-row">
     <div class="app-title">Protocol</div>
-    <div class="app-date font-mono" id="headerDate">—</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="online-badge" id="onlineBadge">Offline-ready</span>
+      <div class="app-date font-mono" id="headerDate">—</div>
+      <button class="theme-toggle" onclick="toggleTheme()" id="themeToggleBtn" aria-label="Toggle theme">🌙</button>
+    </div>
   </div>
 </header>
 
@@ -546,6 +813,23 @@ label.field-label {
       <div class="stat-box"><div class="v" id="statTarget">—</div><div class="l">Target</div></div>
       <div class="stat-box"><div class="v" id="statEaten">0</div><div class="l">Eaten</div></div>
       <div class="stat-box"><div class="v" id="statBurned">0</div><div class="l">Burned</div></div>
+    </div>
+  </div>
+
+  <!-- Medications -->
+  <div class="card" id="medChecklistCard">
+    <div class="card-title">Medications today</div>
+    <div id="medChecklist"></div>
+  </div>
+
+  <!-- Water tracker -->
+  <div class="card">
+    <div class="card-title">Water intake</div>
+    <div class="card-sub">Target: 3–3.5L daily (especially important with Minoxidil)</div>
+    <div class="water-track" id="waterDrops"></div>
+    <div class="water-goal-row">
+      <span id="waterAmount">0 ml</span>
+      <span id="waterGoalLabel">Goal: 3,200 ml</span>
     </div>
   </div>
 
@@ -588,6 +872,13 @@ label.field-label {
   <div class="card" id="todayStepsLog">
     <div class="empty-state">Steps not logged yet today.</div>
   </div>
+
+  <!-- Daily summary (shown after 6pm) -->
+  <div class="card" id="dailySummaryCard" style="display:none">
+    <div class="card-title">Today's summary</div>
+    <div class="card-sub" id="dailySummaryDate">—</div>
+    <div class="summary-grid" id="dailySummaryGrid"></div>
+  </div>
 </main>
 
 <!-- ============ TRAIN ============ -->
@@ -622,11 +913,27 @@ label.field-label {
     </div>
   </div>
   <div class="day-strip" id="eatDayStrip"></div>
+  <div id="mealPrepBanner" style="display:none"></div>
   <div id="eatMealList"></div>
 </main>
 
 <!-- ============ PROGRESS ============ -->
 <main class="view" id="view-progress">
+  <!-- Hair Protocol Tracker -->
+  <div class="card">
+    <div class="card-title">Hair Protocol</div>
+    <div class="card-sub">Minoxidil 2.5mg + Finasteride 1mg — started June 25, 2026</div>
+    <div style="display:flex;align-items:baseline;gap:12px;margin:12px 0">
+      <div class="hair-day-count" id="hairDayCount">0</div>
+      <div>
+        <div class="hair-day-label">days on protocol</div>
+        <div style="font-size:11px;color:var(--accent);font-family:var(--font-mono);margin-top:2px" id="hairNextEvent">—</div>
+      </div>
+    </div>
+    <div class="hair-timeline" id="hairTimeline"></div>
+  </div>
+
+  <!-- Weight -->
   <div class="card">
     <div class="card-title">Weight</div>
     <div class="weight-input-row">
@@ -640,10 +947,31 @@ label.field-label {
     <div class="stat-row">
       <div class="stat-box"><div class="v" id="weightStart">—</div><div class="l">Start</div></div>
       <div class="stat-box"><div class="v" id="weightCurrent">—</div><div class="l">Current</div></div>
-      <div class="stat-box"><div class="v" id="weightTarget">—</div><div class="l">Target</div></div>
+      <div class="stat-box"><div class="v" id="weightTarget">67.5kg</div><div class="l">Target</div></div>
     </div>
   </div>
 
+  <!-- Body Measurements -->
+  <div class="card">
+    <div class="card-title">Body measurements</div>
+    <div class="card-sub">Log monthly — shows fat loss even when scale stalls</div>
+    <div class="measure-grid" id="measureGrid"></div>
+    <button class="btn btn-block" style="margin-top:12px" onclick="openMeasureModal()">Log measurements</button>
+  </div>
+
+  <!-- Workout history -->
+  <div class="card">
+    <div class="card-title">Workout history</div>
+    <div class="card-sub" id="historyMonthLabel">—</div>
+    <div class="history-cal" id="historyCal"></div>
+    <div style="display:flex;gap:14px;margin-top:12px;font-size:11.5px">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:var(--good);display:inline-block"></span>Full session</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:var(--accent-soft);border:1px solid var(--accent);display:inline-block"></span>Partial</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:var(--bg-input);display:inline-block"></span>Missed</span>
+    </div>
+  </div>
+
+  <!-- Weekly averages -->
   <div class="card">
     <div class="card-title">This week</div>
     <div class="weekly-avg-grid">
@@ -654,12 +982,7 @@ label.field-label {
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">Last 7 days</div>
-    <div class="card-sub">Exercise adherence</div>
-    <div class="streak-grid" id="streakGrid"></div>
-  </div>
-
+  <!-- Backup -->
   <div class="card">
     <div class="card-title">Backup your data</div>
     <div class="card-sub">All data lives in this browser only. Export regularly so you don't lose history.</div>
@@ -670,6 +993,28 @@ label.field-label {
     </div>
   </div>
 </main>
+
+<!-- Body measurements modal -->
+<div class="modal-backdrop" id="measureModalBackdrop" onclick="if(event.target===this)closeMeasureModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Log measurements</div>
+    <div class="modal-sub">All in centimetres. Only fill what you measured today.</div>
+    <div class="field-row">
+      <div class="field"><label class="field-label">Waist (cm)</label><input type="number" id="mWaist" step="0.1" placeholder="e.g. 88"></div>
+      <div class="field"><label class="field-label">Chest (cm)</label><input type="number" id="mChest" step="0.1" placeholder="e.g. 96"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label class="field-label">Hips (cm)</label><input type="number" id="mHips" step="0.1" placeholder="e.g. 98"></div>
+      <div class="field"><label class="field-label">Right thigh (cm)</label><input type="number" id="mThigh" step="0.1" placeholder="e.g. 58"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label class="field-label">Left arm (cm)</label><input type="number" id="mArm" step="0.1" placeholder="e.g. 32"></div>
+      <div class="field"><label class="field-label">Neck (cm)</label><input type="number" id="mNeck" step="0.1" placeholder="e.g. 37"></div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick="saveMeasurements()">Save measurements</button>
+  </div>
+</div>
 
 <nav class="tabbar">
   <button class="tab-btn active" data-view="today" onclick="switchView('today')">
@@ -739,6 +1084,21 @@ label.field-label {
       <input type="number" id="stepsCalInput" placeholder="Leave blank to estimate">
     </div>
     <button class="btn btn-primary btn-block" onclick="logSteps()">Save steps</button>
+  </div>
+</div>
+
+<!-- Edit food amount modal -->
+<div class="modal-backdrop" id="editFoodModalBackdrop" onclick="if(event.target===this) closeEditFoodModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Edit amount</div>
+    <div class="modal-sub" id="editFoodName">—</div>
+    <div class="field">
+      <label class="field-label" id="editFoodUnit">Amount</label>
+      <input type="number" id="editFoodAmount" step="0.5" placeholder="e.g. 150" oninput="updateEditFoodPreview()">
+    </div>
+    <div class="recipe-suggestion" id="editFoodPreview" style="margin-bottom:14px">—</div>
+    <button class="btn btn-primary btn-block" onclick="confirmEditFood()">Save</button>
   </div>
 </div>
 

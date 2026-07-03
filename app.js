@@ -40,10 +40,13 @@ function loadState() {
       if (!parsed.weightLog) parsed.weightLog = [];
       if (!parsed.currentWeight) parsed.currentWeight = PROFILE.startWeightKg;
       if (!parsed.customFoodDefs) parsed.customFoodDefs = {};
+      if (!parsed.measureLog) parsed.measureLog = [];
+      if (!parsed.theme) parsed.theme = 'dark';
+      if (parsed.onboardingDone === undefined) parsed.onboardingDone = false;
       return parsed;
     }
   } catch (e) { console.error('Load failed', e); }
-  return { days: {}, weightLog: [], currentWeight: PROFILE.startWeightKg, customFoodDefs: {} };
+  return { days: {}, weightLog: [], currentWeight: PROFILE.startWeightKg, customFoodDefs: {}, measureLog: [], theme: 'dark', onboardingDone: false };
 }
 
 function saveState() {
@@ -66,6 +69,9 @@ function getDayLog(dateKey) {
   if (!d.meals) d.meals = {};
   if (!d.mealChoices) d.mealChoices = {};
   if (d.mealScaleFactor === undefined) d.mealScaleFactor = null;
+  if (!d.waterDrops && d.waterDrops !== 0) d.waterDrops = 0;
+  if (!d.medsTaken) d.medsTaken = {};
+  if (!d.prepDone) d.prepDone = {};
   return d;
 }
 
@@ -819,6 +825,9 @@ function renderEat() {
           </span>
           <span class="food-item-macros">${m.cal}kcal · ${m.protein}p</span>
           ${isToday ? `<span class="food-item-actions">
+            <button class="icon-btn" onclick="openEditFoodModal('${mw.id}', ${idx})" aria-label="Edit amount">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
             <button class="icon-btn" onclick="openSwapModal('${mw.id}', ${idx})" aria-label="Swap">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg>
             </button>
@@ -836,6 +845,76 @@ function renderEat() {
       </div>
     </div>`;
   }).join('');
+}
+
+// ============================================================
+// EDIT FOOD MODAL — change amount of an already-logged item
+// ============================================================
+let editFoodContext = { mealId: null, itemIdx: null };
+
+function openEditFoodModal(mealId, itemIdx) {
+  editFoodContext = { mealId, itemIdx };
+  const dateKey = todayKey();
+  const items = getMealItems(dateKey, selectedEatDay, mealId);
+  const item = items[itemIdx];
+  const food = getFood(item.foodId);
+  if (!food) return;
+
+  document.getElementById('editFoodName').textContent = food.name;
+  document.getElementById('editFoodUnit').textContent =
+    food.unit === '100g' || food.unit === '100ml'
+      ? `Enter ${food.unit === '100ml' ? 'ml' : 'grams'} (${food.cal} kcal per ${food.unit})`
+      : `Enter quantity — 1 = one ${food.unit} · ${food.cal} kcal each`;
+  document.getElementById('editFoodAmount').value = item.amount;
+  updateEditFoodPreview();
+  document.getElementById('editFoodModalBackdrop').classList.add('open');
+}
+
+function closeEditFoodModal() {
+  document.getElementById('editFoodModalBackdrop').classList.remove('open');
+}
+
+function updateEditFoodPreview() {
+  const amount = parseFloat(document.getElementById('editFoodAmount').value);
+  if (!amount || amount <= 0) {
+    document.getElementById('editFoodPreview').textContent = '—';
+    return;
+  }
+  const items = getMealItems(todayKey(), selectedEatDay, editFoodContext.mealId);
+  const item = items[editFoodContext.itemIdx];
+  const food = getFood(item.foodId);
+  if (!food) return;
+  const m = computeItemMacros({ ...item, amount });
+  document.getElementById('editFoodPreview').textContent =
+    `${m.cal} kcal · ${m.protein}g protein · ${m.carbs}g carbs · ${m.fat}g fat`;
+}
+
+function confirmEditFood() {
+  const amount = parseFloat(document.getElementById('editFoodAmount').value);
+  if (!amount || amount <= 0) { showToast('Enter a valid amount'); return; }
+
+  const dateKey = todayKey();
+  const items = getMealItems(dateKey, selectedEatDay, editFoodContext.mealId);
+  const item = items[editFoodContext.itemIdx];
+  const food = getFood(item.foodId);
+  if (!food) return;
+
+  // update amount and regenerate the unit label
+  item.amount = amount;
+  item.unitLabel = food.unit === '100g'
+    ? `${amount}g`
+    : food.unit === '100ml'
+    ? `${amount}ml`
+    : `${amount} × ${food.unit}`;
+
+  // if this item was previously scaled, update its base too so future scaling stays correct
+  if (item._baseAmount) item._baseAmount = amount;
+
+  saveState();
+  closeEditFoodModal();
+  showToast(`Updated to ${amount}${food.unit === '100g' ? 'g' : food.unit === '100ml' ? 'ml' : ' × ' + food.unit}`);
+  renderEat();
+  if (currentView === 'today') renderToday();
 }
 
 function removeMealItem(mealId, itemIdx) {
@@ -1204,10 +1283,663 @@ function importData(event) {
 }
 
 // ============================================================
+// THEME TOGGLE
+// ============================================================
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light-mode');
+  state.theme = isLight ? 'light' : 'dark';
+  document.getElementById('themeToggleBtn').textContent = isLight ? '☀️' : '🌙';
+  saveState();
+  haptic('light');
+}
+
+function applyTheme() {
+  if (state.theme === 'light') {
+    document.body.classList.add('light-mode');
+    document.getElementById('themeToggleBtn').textContent = '☀️';
+  }
+}
+
+// ============================================================
+// HAPTIC FEEDBACK
+// ============================================================
+function haptic(type = 'light') {
+  if (!navigator.vibrate) return;
+  const patterns = { light: [10], medium: [20], heavy: [30, 10, 30], success: [10, 50, 10] };
+  navigator.vibrate(patterns[type] || [10]);
+}
+
+// ============================================================
+// OFFLINE INDICATOR
+// ============================================================
+function initOfflineIndicator() {
+  function update() {
+    const offline = !navigator.onLine;
+    document.getElementById('offlineBar').classList.toggle('visible', offline);
+  }
+  window.addEventListener('online', update);
+  window.addEventListener('offline', update);
+  update();
+}
+
+// ============================================================
+// WATER TRACKER — 8 drops × 400ml = 3200ml goal
+// ============================================================
+const WATER_PER_DROP_ML = 400;
+const WATER_DROPS_TOTAL = 8;
+
+function renderWaterTracker() {
+  const dateKey = todayKey();
+  const log = getDayLog(dateKey);
+  const drops = log.waterDrops || 0;
+  const totalMl = drops * WATER_PER_DROP_ML;
+  const goalMl = WATER_DROPS_TOTAL * WATER_PER_DROP_ML;
+
+  const container = document.getElementById('waterDrops');
+  if (!container) return;
+  container.innerHTML = Array.from({ length: WATER_DROPS_TOTAL }, (_, i) => `
+    <div class="water-drop ${i < drops ? 'filled' : ''}"
+      onclick="toggleWaterDrop(${i})"
+      title="${(i + 1) * WATER_PER_DROP_ML}ml">
+    </div>
+  `).join('');
+
+  const el = document.getElementById('waterAmount');
+  if (el) el.textContent = totalMl >= 1000 ? `${(totalMl/1000).toFixed(1)}L` : `${totalMl}ml`;
+  const gl = document.getElementById('waterGoalLabel');
+  if (gl) gl.textContent = `Goal: ${(goalMl/1000).toFixed(1)}L · ${WATER_PER_DROP_ML}ml per drop`;
+}
+
+function toggleWaterDrop(idx) {
+  haptic('light');
+  const dateKey = todayKey();
+  const log = getDayLog(dateKey);
+  const current = log.waterDrops || 0;
+  // tapping filled drop empties from that drop onward, tapping empty fills up to it
+  log.waterDrops = idx < current ? idx : idx + 1;
+  if (log.waterDrops === WATER_DROPS_TOTAL) {
+    showToast('💧 Water goal reached!');
+    haptic('success');
+  }
+  saveState();
+  renderWaterTracker();
+}
+
+// ============================================================
+// MEDICATION CHECKLIST
+// ============================================================
+const MEDICATIONS = [
+  { id: 'minoxidil', name: 'Minoxidil 2.5mg', time: '9:30am', detail: 'Take with breakfast — needs dietary fat (peanut butter/chia) for absorption' },
+  { id: 'd3_k2_b12', name: 'D3 5000IU + K2 100mcg + B12', time: '9:30am', detail: 'With breakfast — fat-soluble, take with the fat in your meal' },
+  { id: 'finasteride', name: 'Finasteride 1mg', time: '8:00pm', detail: 'With dinner + B-Complex. At least 2 hours after RYZE coffee.' },
+  { id: 'bcomplex', name: 'B-Complex', time: '8:00pm', detail: 'With dinner alongside Finasteride' }
+];
+
+function renderMedChecklist() {
+  const dateKey = todayKey();
+  const log = getDayLog(dateKey);
+  const taken = log.medsTaken || {};
+  const container = document.getElementById('medChecklist');
+  if (!container) return;
+
+  container.innerHTML = MEDICATIONS.map(med => {
+    const done = !!taken[med.id];
+    return `<div class="med-item ${done ? 'done' : ''}">
+      <button class="check ${done ? 'checked' : ''}" onclick="toggleMed('${med.id}')" aria-label="Mark taken">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 12l5 5L20 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="med-info">
+        <div class="med-name">${med.name}</div>
+        <div class="med-time">${med.time}</div>
+        <div class="med-detail">${med.detail}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleMed(medId) {
+  haptic('light');
+  const dateKey = todayKey();
+  const log = getDayLog(dateKey);
+  if (!log.medsTaken) log.medsTaken = {};
+  log.medsTaken[medId] = !log.medsTaken[medId];
+  const med = MEDICATIONS.find(m => m.id === medId);
+  if (log.medsTaken[medId]) showToast(`✓ ${med.name} logged`);
+  saveState();
+  renderMedChecklist();
+}
+
+// ============================================================
+// DAILY SUMMARY (shown after 6pm)
+// ============================================================
+function renderDailySummary() {
+  const card = document.getElementById('dailySummaryCard');
+  if (!card) return;
+  const hour = new Date().getHours();
+  if (hour < 18) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+
+  const dateKey = todayKey();
+  const dayId = todayDayId();
+  const log = getDayLog(dateKey);
+  const eaten = computeDayEatenTotals(dateKey, dayId);
+  const target = getDayTarget(dateKey);
+  const macroTargets = getMacroTargetsForDay(dateKey);
+  const burn = getDayTotalBurn(dateKey);
+  const deficit = target - eaten.cal;
+  const proteinHit = eaten.protein >= macroTargets.protein * 0.9;
+  const waterOk = (log.waterDrops || 0) >= 6;
+  const medsAllTaken = MEDICATIONS.every(m => (log.medsTaken || {})[m.id]);
+  const workoutDone = Object.values(log.exercises).some(e => e.completed);
+
+  const dateEl = document.getElementById('dailySummaryDate');
+  if (dateEl) dateEl.textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  const grid = document.getElementById('dailySummaryGrid');
+  if (!grid) return;
+  grid.innerHTML = `
+    <div class="summary-cell ${deficit >= 0 ? 'good-cell' : 'warn-cell'}">
+      <div class="sv">${Math.abs(Math.round(deficit))}</div>
+      <div class="sl">${deficit >= 0 ? 'kcal deficit ✓' : 'kcal over'}</div>
+    </div>
+    <div class="summary-cell ${proteinHit ? 'good-cell' : 'warn-cell'}">
+      <div class="sv">${Math.round(eaten.protein)}g</div>
+      <div class="sl">protein ${proteinHit ? '✓' : '— low'}</div>
+    </div>
+    <div class="summary-cell ${workoutDone ? 'good-cell' : ''}">
+      <div class="sv">${workoutDone ? burn + ' kcal' : 'Rest'}</div>
+      <div class="sl">exercise</div>
+    </div>
+    <div class="summary-cell ${waterOk ? 'good-cell' : 'warn-cell'}">
+      <div class="sv">${(log.waterDrops || 0) * 0.4}L</div>
+      <div class="sl">water ${waterOk ? '✓' : '— low'}</div>
+    </div>
+    <div class="summary-cell ${medsAllTaken ? 'good-cell' : 'warn-cell'}">
+      <div class="sv">${medsAllTaken ? 'All ✓' : `${Object.values(log.medsTaken||{}).filter(Boolean).length}/${MEDICATIONS.length}`}</div>
+      <div class="sl">medications</div>
+    </div>
+  `;
+}
+
+// ============================================================
+// REST TIMER
+// ============================================================
+let restTimerInterval = null;
+let restTimerSeconds = 0;
+
+function startRestTimer(restSec, exerciseName, nextExName) {
+  if (restTimerInterval) clearInterval(restTimerInterval);
+  restTimerSeconds = restSec;
+  const bar = document.getElementById('restTimerBar');
+  const countEl = document.getElementById('restTimerCount');
+  const nameEl = document.getElementById('restTimerExName');
+  const nextEl = document.getElementById('restTimerNext');
+  if (!bar) return;
+  bar.classList.add('active');
+  nameEl.textContent = `After: ${exerciseName}`;
+  nextEl.textContent = nextExName ? `Up next: ${nextExName}` : 'Last exercise';
+  countEl.textContent = restTimerSeconds;
+
+  restTimerInterval = setInterval(() => {
+    restTimerSeconds--;
+    if (restTimerSeconds <= 0) {
+      clearInterval(restTimerInterval);
+      bar.classList.remove('active');
+      haptic('success');
+      showToast('Rest done — go!');
+    } else {
+      countEl.textContent = restTimerSeconds;
+      if (restTimerSeconds <= 3) haptic('light');
+    }
+  }, 1000);
+}
+
+function skipRestTimer() {
+  if (restTimerInterval) clearInterval(restTimerInterval);
+  const bar = document.getElementById('restTimerBar');
+  if (bar) bar.classList.remove('active');
+  haptic('medium');
+}
+
+// ============================================================
+// PROGRESSIVE OVERLOAD TRACKER
+// ============================================================
+function getLastWeekExerciseData(exId) {
+  const today = new Date();
+  for (let i = 1; i <= 14; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = todayKey(d);
+    const log = state.days[key];
+    if (log && log.exercises && log.exercises[exId] && log.exercises[exId].completed) {
+      return log.exercises[exId];
+    }
+  }
+  return null;
+}
+
+function getOverloadBadge(ex, currentSets, currentReps) {
+  const last = getLastWeekExerciseData(ex.id);
+  if (!last) return '<span style="font-size:11px;color:var(--text-tertiary)">First session</span>';
+  const lastReps = last.reps || ex.reps || 0;
+  const lastSets = last.sets || ex.sets;
+  const repsUp = currentReps > lastReps;
+  const setsUp = currentSets > lastSets;
+  if (repsUp || setsUp) {
+    return `<span class="overload-badge new-pr">↑ PR ${repsUp ? `+${currentReps - lastReps} reps` : ''} ${setsUp ? `+${currentSets - lastSets} sets` : ''}</span>`;
+  }
+  if (currentReps === lastReps) {
+    return `<span class="overload-badge">= ${lastReps} reps last session · Try +1 today</span>`;
+  }
+  return '';
+}
+
+// ============================================================
+// WORKOUT HISTORY CALENDAR (30 days)
+// ============================================================
+function renderWorkoutHistory() {
+  const cal = document.getElementById('historyCal');
+  const label = document.getElementById('historyMonthLabel');
+  if (!cal) return;
+
+  const today = new Date();
+  const days = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    days.push(d);
+  }
+
+  if (label) {
+    const first = days[0], last = days[days.length - 1];
+    label.textContent = first.toLocaleDateString('en-US', { month: 'long' }) === last.toLocaleDateString('en-US', { month: 'long' })
+      ? first.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      : `${first.toLocaleDateString('en-US', { month: 'short' })} – ${last.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+  }
+
+  cal.innerHTML = days.map(d => {
+    const key = todayKey(d);
+    const dayId = todayDayId(d);
+    const log = state.days[key];
+    const planDay = EXERCISE_PLAN.find(p => p.id === dayId);
+    const totalEx = planDay ? planDay.exercises.length : 0;
+    const doneCount = log ? Object.values(log.exercises || {}).filter(e => e.completed).length : 0;
+    const isToday = key === todayKey();
+    let cls = 'rest';
+    if (doneCount >= totalEx && totalEx > 0) cls = 'full';
+    else if (doneCount > 0) cls = 'partial';
+    const dayLabel = d.toLocaleDateString('en-US', { weekday: 'narrow' });
+    return `<div class="history-day ${cls} ${isToday ? 'today-ring' : ''}" title="${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: ${doneCount}/${totalEx} done">${dayLabel}</div>`;
+  }).join('');
+}
+
+// ============================================================
+// MUSCLE GROUP HEATMAP
+// ============================================================
+const MUSCLE_GROUPS = {
+  'Glutes':       ['mon_bridge','wed_sumo','wed_bulgarian','wed_glutebridge','fri_lunge','fri_squatcalf'],
+  'Quads':        ['mon_squat','wed_squat','wed_bulgarian','wed_lunge','fri_squatcalf','fri_lunge'],
+  'Hamstrings':   ['wed_lunge','wed_glutebridge','fri_lunge'],
+  'Core / Abs':   ['mon_plank','tue_hollow','tue_legraise','tue_mtnclimb','tue_deadbug','thu_shouldertap','fri_plank','fri_mtnclimb'],
+  'Chest':        ['mon_pushup','fri_pushup','thu_diamond'],
+  'Shoulders':    ['thu_pike'],
+  'Triceps':      ['thu_diamond','mon_pushup','fri_pushup'],
+  'Upper back':   ['thu_row','thu_superman'],
+  'Calves':       ['fri_squatcalf'],
+  'Cardiovascular':['tue_cardio','fri_mtnclimb']
+};
+
+function renderMuscleHeatmap() {
+  const container = document.getElementById('muscleHeatmapContainer');
+  if (!container) return;
+  const dateKey = todayKey();
+  const log = getDayLog(dateKey);
+  const completedIds = new Set(Object.entries(log.exercises).filter(([,e]) => e.completed).map(([id]) => id));
+
+  let html = '<div class="muscle-grid">';
+  Object.entries(MUSCLE_GROUPS).forEach(([muscle, exIds]) => {
+    const hit = exIds.filter(id => completedIds.has(id)).length;
+    const pct = Math.round((hit / exIds.length) * 100);
+    const color = pct >= 66 ? 'var(--good)' : pct >= 33 ? 'var(--accent)' : 'var(--line)';
+    html += `<div class="muscle-row">
+      <span class="muscle-name">${muscle}</span>
+      <div class="muscle-bar-wrap"><div class="muscle-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <span class="muscle-vol-label">${pct}%</span>
+    </div>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// ============================================================
+// MEAL PREP REMINDER (Sunday)
+// ============================================================
+const MEAL_PREP_ITEMS = [
+  { task: 'Cook quinoa (dry batch)', portions: 'Use through Mon–Wed lunches and Fri dinner', time: '15 min' },
+  { task: 'Make red lentil soup', portions: '2–3 portions · lasts Mon & Tue dinners', time: '20 min' },
+  { task: 'Cook chickpeas / chole', portions: 'Use in Wed/Thu/Sun lunches', time: '25 min (pressure cooker) / 45 min stovetop' },
+  { task: 'Soak rajma overnight', portions: 'For Friday lunch', time: '5 min + overnight soak' },
+  { task: 'Prep overnight oats base', portions: 'Mon breakfast — refrigerate tonight', time: '5 min' },
+  { task: 'Hard-boil eggs (optional)', portions: 'Quick protein add-on if needed', time: '10 min' },
+  { task: 'Portion frozen berries/mango', portions: 'Into daily ½-cup bags', time: '5 min' }
+];
+
+function renderMealPrepReminder() {
+  const container = document.getElementById('mealPrepBanner');
+  if (!container) return;
+  const dayId = todayDayId();
+  if (dayId !== 'sun') {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+  container.innerHTML = `
+    <div class="prep-banner">
+      <div class="prep-banner-title">🥘 Sunday Meal Prep</div>
+      <div style="font-size:12.5px;color:var(--text-secondary);margin-bottom:10px">Prep today → Mon–Fri lunches and dinners take under 10 min</div>
+      ${MEAL_PREP_ITEMS.map((item, i) => {
+        const dateKey = todayKey();
+        const log = getDayLog(dateKey);
+        const done = (log.prepDone || {})[i];
+        return `<div class="prep-item">
+          <button class="check ${done ? 'checked' : ''}" onclick="togglePrepItem(${i})" style="width:20px;height:20px;border-radius:5px;flex-shrink:0">
+            <svg viewBox="0 0 24 24" fill="none" style="width:11px;height:11px"><path d="M4 12l5 5L20 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div>
+            <div style="font-weight:600;${done ? 'text-decoration:line-through;color:var(--text-tertiary)' : ''}">${item.task}</div>
+            <div style="font-size:11.5px;color:var(--text-tertiary)">${item.portions} · ${item.time}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function togglePrepItem(idx) {
+  haptic('light');
+  const dateKey = todayKey();
+  const log = getDayLog(dateKey);
+  if (!log.prepDone) log.prepDone = {};
+  log.prepDone[idx] = !log.prepDone[idx];
+  saveState();
+  renderMealPrepReminder();
+}
+
+// ============================================================
+// BODY MEASUREMENTS
+// ============================================================
+const MEASURE_FIELDS = [
+  { id: 'waist', label: 'Waist', unit: 'cm', goal: 'down', inputId: 'mWaist' },
+  { id: 'chest', label: 'Chest', unit: 'cm', goal: 'up', inputId: 'mChest' },
+  { id: 'hips', label: 'Hips', unit: 'cm', goal: 'down', inputId: 'mHips' },
+  { id: 'thigh', label: 'Right thigh', unit: 'cm', goal: 'down', inputId: 'mThigh' },
+  { id: 'arm', label: 'Left arm', unit: 'cm', goal: 'up', inputId: 'mArm' },
+  { id: 'neck', label: 'Neck', unit: 'cm', goal: 'neutral', inputId: 'mNeck' }
+];
+
+function renderMeasurements() {
+  const grid = document.getElementById('measureGrid');
+  if (!grid) return;
+  const log = state.measureLog || [];
+  const latest = log[log.length - 1];
+  const baseline = log[0];
+
+  grid.innerHTML = MEASURE_FIELDS.map(f => {
+    const val = latest ? latest[f.id] : null;
+    const base = baseline ? baseline[f.id] : null;
+    const diff = val && base ? (val - base).toFixed(1) : null;
+    const isGood = diff ? (f.goal === 'down' ? diff < 0 : f.goal === 'up' ? diff > 0 : false) : false;
+    return `<div class="measure-cell">
+      <div class="mv">${val ? val + f.unit : '—'}</div>
+      <div class="ml">${f.label}</div>
+      ${diff ? `<div class="mdiff ${isGood ? 'loss' : 'gain'}">${diff > 0 ? '+' : ''}${diff}${f.unit} from start</div>` : ''}
+    </div>`;
+  }).join('');
+
+  if (latest) {
+    const dateEl = document.createElement('div');
+    dateEl.style.cssText = 'font-size:11px;color:var(--text-tertiary);margin-top:10px;grid-column:1/-1';
+    dateEl.textContent = `Last logged: ${new Date(latest.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    grid.appendChild(dateEl);
+  }
+}
+
+function openMeasureModal() {
+  MEASURE_FIELDS.forEach(f => {
+    const el = document.getElementById(f.inputId);
+    if (el) el.value = '';
+  });
+  document.getElementById('measureModalBackdrop').classList.add('open');
+}
+function closeMeasureModal() {
+  document.getElementById('measureModalBackdrop').classList.remove('open');
+}
+
+function saveMeasurements() {
+  const entry = { date: new Date().toISOString() };
+  let anyFilled = false;
+  MEASURE_FIELDS.forEach(f => {
+    const val = parseFloat(document.getElementById(f.inputId).value);
+    if (val > 0) { entry[f.id] = val; anyFilled = true; }
+  });
+  if (!anyFilled) { showToast('Fill in at least one measurement'); return; }
+  if (!state.measureLog) state.measureLog = [];
+  // replace today's entry if one already exists
+  const todayStr = todayKey();
+  const existingIdx = state.measureLog.findIndex(m => m.date.startsWith(todayStr));
+  if (existingIdx >= 0) state.measureLog[existingIdx] = entry;
+  else state.measureLog.push(entry);
+  saveState();
+  closeMeasureModal();
+  haptic('success');
+  showToast('Measurements saved');
+  renderMeasurements();
+}
+
+// ============================================================
+// HAIR PROTOCOL TRACKER
+// ============================================================
+const HAIR_START_DATE = new Date('2026-06-25');
+const HAIR_MILESTONES = [
+  { day: 0,   label: 'Protocol started',      desc: 'Minoxidil 2.5mg daily + Finasteride 1mg nightly', emoji: '🚀' },
+  { day: 14,  label: 'Initial shed possible',  desc: 'Minoxidil can trigger a temporary shed — completely normal, means follicles are activating', emoji: '⚠️' },
+  { day: 35,  label: 'Dermaroller begins',     desc: 'Start 0.5mm dermaroller every Wednesday. Increases minoxidil absorption by up to 4×', emoji: '🔁' },
+  { day: 60,  label: '2-month check',          desc: 'First photo comparison. No visible results expected yet — Finasteride takes 3–6 months to show effect', emoji: '📸' },
+  { day: 90,  label: '3-month mark',           desc: 'DHT levels significantly reduced. Hair loss should be slowing or stopped', emoji: '🛡️' },
+  { day: 120, label: '4-month mark',           desc: 'Early regrowth may appear as fine, light vellus hairs', emoji: '🌱' },
+  { day: 180, label: '6 months — real results',desc: 'Primary window for visible regrowth. Take progress photos and compare with Day 0', emoji: '✨' },
+  { day: 365, label: '1 year — full assessment',desc: 'Most users see maximum benefit by 12 months. Reassess with doctor.', emoji: '🏆' }
+];
+
+function renderHairTracker() {
+  const dayCount = document.getElementById('hairDayCount');
+  const timeline = document.getElementById('hairTimeline');
+  const nextEvent = document.getElementById('hairNextEvent');
+  if (!dayCount || !timeline) return;
+
+  const today = new Date();
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const daysOn = Math.floor((today - HAIR_START_DATE) / msPerDay);
+  dayCount.textContent = Math.max(0, daysOn);
+
+  // dermaroller — every Wednesday from day 35
+  const dermaStart = new Date(HAIR_START_DATE);
+  dermaStart.setDate(dermaStart.getDate() + 35);
+  let dermaMsg = '';
+  if (daysOn >= 35) {
+    const dayOfWeek = today.getDay();
+    const daysToWed = (3 - dayOfWeek + 7) % 7;
+    dermaMsg = daysToWed === 0 ? '🔁 Dermaroller day!' : `Dermaroller in ${daysToWed} day${daysToWed > 1 ? 's' : ''} (Wed)`;
+  }
+
+  // next milestone
+  const nextMilestone = HAIR_MILESTONES.find(m => m.day > daysOn);
+  const nextMsg = nextMilestone
+    ? `${nextMilestone.emoji} ${nextMilestone.label} in ${nextMilestone.day - daysOn} days`
+    : 'All milestones reached — keep going!';
+  if (nextEvent) nextEvent.textContent = dermaMsg || nextMsg;
+
+  timeline.innerHTML = HAIR_MILESTONES.map(m => {
+    const reached = daysOn >= m.day;
+    const isCurrent = reached && (!HAIR_MILESTONES.find(n => n.day > m.day && daysOn >= n.day));
+    const dateOfMilestone = new Date(HAIR_START_DATE);
+    dateOfMilestone.setDate(dateOfMilestone.getDate() + m.day);
+    const dateStr = dateOfMilestone.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    let cls = reached ? 'reached' : 'upcoming';
+    // find the last reached milestone to mark as current
+    const lastReachedDay = HAIR_MILESTONES.filter(x => daysOn >= x.day).slice(-1)[0];
+    if (lastReachedDay && m.day === lastReachedDay.day && m.day > 0) cls = 'current';
+    return `<div class="hair-milestone">
+      <div class="hair-dot ${cls}">${m.emoji}</div>
+      <div class="hair-milestone-info">
+        <div class="hair-milestone-title">Day ${m.day} — ${m.label}</div>
+        <div class="hair-milestone-date">${dateStr}${reached ? ' ✓' : ''}</div>
+        <div class="hair-milestone-desc">${m.desc}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// ONBOARDING FLOW
+// ============================================================
+const ONBOARDING_STEPS = [
+  { icon: '💪', title: 'Welcome to Protocol', desc: 'Your complete personal health tracker — diet, exercise, medications, and hair protocol all in one place, built around your exact plan.' },
+  { icon: '🍽️', title: 'Eat tab', desc: 'Your 7-day vegetarian diet plan is pre-loaded. Switch between meal options (Oats / Toast / Smoothie), swap ingredients, add custom foods, and track macros in real time.' },
+  { icon: '🏋️', title: 'Train tab', desc: 'Your full 5-day bodyweight plan with instructions, sets/reps, rest timers, and calorie burn. Checking off an exercise automatically adjusts your meal targets.' },
+  { icon: '💧', title: 'Today tab', desc: 'Your daily hub — calorie ring, water tracker, medication checklist, and a night summary. Everything updates live as you log.' },
+  { icon: '📈', title: 'Progress tab', desc: 'Track weight, body measurements, hair protocol milestones, and 30-day workout history. Export your data regularly as a backup.' },
+  { icon: '🚀', title: "You're all set", desc: 'Start by logging your breakfast in the Eat tab, or check off your morning workout in Train. Your data saves automatically in this browser.' }
+];
+let onboardingStep = 0;
+
+function showOnboarding() {
+  if (state.onboardingDone) return;
+  onboardingStep = 0;
+  renderOnboardingStep();
+  document.getElementById('onboardingOverlay').classList.remove('hidden');
+}
+
+function renderOnboardingStep() {
+  const step = ONBOARDING_STEPS[onboardingStep];
+  document.getElementById('onboardingIcon').textContent = step.icon;
+  document.getElementById('onboardingTitle').textContent = step.title;
+  document.getElementById('onboardingDesc').textContent = step.desc;
+  const btn = document.getElementById('onboardingBtn');
+  btn.textContent = onboardingStep === ONBOARDING_STEPS.length - 1 ? "Let's go!" : 'Next';
+
+  const dots = document.getElementById('onboardingDots');
+  dots.innerHTML = ONBOARDING_STEPS.map((_, i) =>
+    `<div class="onboarding-dot ${i === onboardingStep ? 'active' : ''}"></div>`
+  ).join('');
+}
+
+function onboardingNext() {
+  haptic('light');
+  onboardingStep++;
+  if (onboardingStep >= ONBOARDING_STEPS.length) {
+    skipOnboarding();
+  } else {
+    renderOnboardingStep();
+  }
+}
+
+function skipOnboarding() {
+  state.onboardingDone = true;
+  saveState();
+  document.getElementById('onboardingOverlay').classList.add('hidden');
+}
+
+// ============================================================
+// ENHANCED toggleExerciseComplete — adds rest timer + overload badge
+// ============================================================
+const _origToggleExerciseComplete = toggleExerciseComplete;
+// Wrap the original to add rest timer trigger
+const _wrappedToggle = function(exId) {
+  const day = EXERCISE_PLAN.find(d => d.id === selectedTrainDay);
+  const exIdx = day ? day.exercises.findIndex(e => e.id === exId) : -1;
+  const ex = exIdx >= 0 ? day.exercises[exIdx] : null;
+  const wasCompleted = (() => {
+    const dateKey = todayKey();
+    const log = getDayLog(dateKey);
+    return log.exercises[exId] && log.exercises[exId].completed;
+  })();
+
+  toggleExerciseComplete(exId);
+
+  // If just completed (not unchecked), start rest timer
+  const dateKey = todayKey();
+  const log = getDayLog(dateKey);
+  if (ex && log.exercises[exId] && log.exercises[exId].completed && !wasCompleted) {
+    haptic('medium');
+    const nextEx = day && exIdx < day.exercises.length - 1 ? day.exercises[exIdx + 1] : null;
+    startRestTimer(ex.restSec || 60, ex.name, nextEx ? nextEx.name : null);
+  }
+};
+
+// ============================================================
+// UPDATED renderToday — includes water + meds + summary + prep
+// ============================================================
+const _origRenderToday = renderToday;
+function renderToday() {
+  _origRenderToday();
+  renderWaterTracker();
+  renderMedChecklist();
+  renderDailySummary();
+  renderMealPrepReminder();
+}
+
+// ============================================================
+// UPDATED renderProgress — includes all new sections
+// ============================================================
+const _origRenderProgress = renderProgress;
+function renderProgress() {
+  _origRenderProgress();
+  renderHairTracker();
+  renderMeasurements();
+  renderWorkoutHistory();
+}
+
+// ============================================================
+// UPDATED renderTrain — includes muscle heatmap + overload
+// ============================================================
+// Muscle heatmap container is rendered inside renderTrain,
+// so we just need to call renderMuscleHeatmap after it
+const _origRenderTrain = renderTrain;
+function renderTrain() {
+  _origRenderTrain();
+  // Add heatmap section if not present
+  let heatmapSection = document.getElementById('muscleHeatmapSection');
+  if (!heatmapSection) {
+    heatmapSection = document.createElement('div');
+    heatmapSection.id = 'muscleHeatmapSection';
+    const trainView = document.getElementById('view-train');
+    if (trainView) trainView.appendChild(heatmapSection);
+  }
+  const dateKey = todayKey();
+  const log = getDayLog(dateKey);
+  const anyDone = Object.values(log.exercises).some(e => e.completed);
+  heatmapSection.innerHTML = anyDone ? `
+    <div class="section-heading">Muscles worked today</div>
+    <div class="card"><div id="muscleHeatmapContainer"></div></div>
+  ` : '';
+  if (anyDone) renderMuscleHeatmap();
+}
+
+// ============================================================
+// UPDATED loadState — add new state fields
+// ============================================================
+const _origLoadState = loadState;
+
+// ============================================================
 // INIT
 // ============================================================
 function init() {
+  // Apply saved theme before render to avoid flash
+  applyTheme();
+  initOfflineIndicator();
   updateHeaderDate();
   renderToday();
+  showOnboarding();
 }
 init();
+
