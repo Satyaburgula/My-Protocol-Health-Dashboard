@@ -379,7 +379,22 @@ label.field-label {
 .ring-card {
   display: flex; flex-direction: column; align-items: center;
   padding: 28px 18px 22px;
+  position: relative;
 }
+.info-toggle {
+  position: absolute; top: 14px; right: 14px;
+  background: var(--bg-input); border: 1px solid var(--line);
+  color: var(--text-tertiary); width: 26px; height: 26px;
+  border-radius: 50%; font-size: 13px; display: flex; align-items: center; justify-content: center;
+}
+.info-toggle:active { background: var(--accent-soft); color: var(--accent); }
+.info-box {
+  margin-top: 16px; padding: 12px 14px; background: var(--bg-input);
+  border-radius: var(--radius-md); font-size: 12px; color: var(--text-secondary);
+  line-height: 1.6; text-align: left; width: 100%;
+}
+.info-box strong { color: var(--text-primary); font-family: var(--font-mono); }
+
 .ring-wrap { position: relative; width: 220px; height: 220px; margin-bottom: 14px; }
 .ring-wrap svg { transform: rotate(-90deg); width: 100%; height: 100%; }
 .ring-bg { fill: none; stroke: var(--bg-input); stroke-width: 14; }
@@ -481,6 +496,17 @@ label.field-label {
 .exercise-type { font-size: 11.5px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600; margin-bottom: 6px; }
 .exercise-specs { font-size: 12.5px; color: var(--text-secondary); }
 .exercise-burn { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); margin-top: 4px; }
+.alt-tag {
+  display: inline-block; font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em;
+  color: var(--accent); background: var(--accent-soft); border-radius: var(--radius-sm);
+  padding: 1px 6px; margin-left: 6px; vertical-align: middle; text-transform: uppercase;
+}
+.alt-swap-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: none; border: none; color: var(--info);
+  font-size: 11.5px; font-weight: 600; padding: 8px 0 0; margin: 0;
+}
+.alt-swap-btn:active { opacity: 0.7; }
 
 .exercise-detail {
   border-top: 1px solid var(--line-soft);
@@ -601,6 +627,17 @@ label.field-label {
   margin-top: 14px; padding: 12px 14px; background: var(--good-soft);
   border-radius: var(--radius-md); font-size: 12.5px; color: var(--good); line-height: 1.5;
 }
+
+.week-recap-line { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line-soft); }
+.week-recap-line strong { color: var(--text-primary); font-weight: 600; }
+
+.recipe-card {
+  background: var(--bg-card); border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md); padding: 14px; margin-bottom: 10px;
+}
+.recipe-card-title { font-family: var(--font-display); font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.recipe-card-method { font-size: 12.5px; color: var(--text-secondary); line-height: 1.55; margin-bottom: 8px; }
+.recipe-card-pair { font-size: 11px; color: var(--accent); font-family: var(--font-mono); }
 
 /* meal option selector chips */
 .option-chips {
@@ -874,6 +911,7 @@ label.field-label {
 <main class="view active" id="view-today">
   <div class="greeting-block" id="greetingBlock"></div>
   <div class="card ring-card">
+    <button class="info-toggle" onclick="toggleInfo('infoTarget')" aria-label="Explain this number">ⓘ</button>
     <div class="ring-wrap">
       <svg viewBox="0 0 220 220">
         <circle class="ring-bg" cx="110" cy="110" r="95"></circle>
@@ -888,6 +926,9 @@ label.field-label {
       <div class="stat-box"><div class="v" id="statTarget">—</div><div class="l">Target</div></div>
       <div class="stat-box"><div class="v" id="statEaten">0</div><div class="l">Eaten</div></div>
       <div class="stat-box"><div class="v" id="statBurned">0</div><div class="l">Burned</div></div>
+    </div>
+    <div class="info-box" id="infoTarget" style="display:none">
+      Your target starts at <strong id="infoBaseTarget">—</strong> kcal — that's your maintenance calories (BMR × activity level) minus a steady 500 kcal deficit for sustainable fat loss (~0.45kg/week). Every calorie you burn through logged exercise gets added on top, so the 500 kcal deficit stays constant whether it's a rest day or a heavy training day — you're never eating below what's healthy, just consistently below what you burn.
     </div>
   </div>
 
@@ -908,7 +949,8 @@ label.field-label {
     </div>
   </div>
 
-  <div class="card">
+  <div class="card" style="position:relative">
+    <button class="info-toggle" onclick="toggleInfo('infoMacros')" aria-label="Explain macros">ⓘ</button>
     <div class="card-title">Macros today</div>
     <div class="card-sub">Targets recalculate from base + exercise</div>
     <div class="macro-bars">
@@ -924,6 +966,9 @@ label.field-label {
         <div class="macro-bar-top"><span class="name">Fat</span><span class="nums font-mono" id="macroFatNums">0 / 0g</span></div>
         <div class="macro-track"><div class="macro-fill" id="macroFatFill" style="width:0%;background:var(--good)"></div></div>
       </div>
+    </div>
+    <div class="info-box" id="infoMacros" style="display:none">
+      Protein (120g base) stays fixed from your diet plan since it's the priority macro for muscle retention during fat loss. When exercise adds extra calories, the surplus splits 35% protein / 40% carbs / 25% fat — carbs get the biggest share since they're what actually refuel training.
     </div>
   </div>
 
@@ -1049,6 +1094,7 @@ label.field-label {
   <!-- Weekly averages -->
   <div class="card">
     <div class="card-title">This week</div>
+    <div class="week-recap-line" id="weekRecapLine"></div>
     <div class="weekly-avg-grid">
       <div class="stat-box"><div class="v" id="weekAvgCal">—</div><div class="l">Avg calories</div></div>
       <div class="stat-box"><div class="v" id="weekAvgProtein">—</div><div class="l">Avg protein</div></div>
@@ -1221,6 +1267,15 @@ label.field-label {
         <input type="text" id="customFoodName" placeholder="e.g. Restaurant dal, homemade sabzi">
       </div>
       <div class="field">
+        <label class="field-label">What kind of food is this?</label>
+        <select id="customFoodCategory">
+          <option value="protein">Protein (dal, meat sub, paneer, beans...)</option>
+          <option value="carb">Carb (rice, bread, grain...)</option>
+          <option value="fat">Fat (oil, nuts, dressing...)</option>
+          <option value="other">Other (fruit, veg, drink...)</option>
+        </select>
+      </div>
+      <div class="field">
         <label class="field-label">Serving size in grams (optional but recommended)</label>
         <input type="number" id="customFoodServingG" placeholder="e.g. 300 — app converts to per-100g so you can reuse any amount later">
       </div>
@@ -1244,8 +1299,20 @@ label.field-label {
           <input type="number" id="customFoodFat" placeholder="g">
         </div>
       </div>
+      <div id="recipeSuggestionsBox" style="display:none"></div>
     </div>
     <button class="btn btn-primary btn-block" onclick="confirmAddFood()">Add to meal</button>
+  </div>
+</div>
+
+<!-- Recipe suggestions modal (shown after saving a custom food) -->
+<div class="modal-backdrop" id="recipeModalBackdrop" onclick="if(event.target===this) closeRecipeModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="recipeModalTitle">Recipe ideas</div>
+    <div class="modal-sub">Built from foods already in your plan — matched to keep your macros on track</div>
+    <div id="recipeModalList"></div>
+    <button class="btn btn-block" style="margin-top:12px" onclick="closeRecipeModal()">Got it</button>
   </div>
 </div>
 
