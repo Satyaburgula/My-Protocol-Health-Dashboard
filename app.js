@@ -121,6 +121,7 @@ function getDayLog(dateKey) {
   d.medsTaken    = d.medsTaken    || {};
   d.prepDone     = d.prepDone     || {};
   d.mealConfirmed = d.mealConfirmed || {};
+  d.exerciseAlts  = d.exerciseAlts  || {};
   return d;
 }
 
@@ -158,6 +159,17 @@ function toggleTheme() {
   state.theme = state.theme === 'light' ? 'dark' : 'light';
   applyTheme();
   saveState();
+  haptic('light');
+}
+
+// ============================================================
+// INFO TOGGLES — expandable "why" explanations
+// ============================================================
+function toggleInfo(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const isHidden = el.style.display === 'none';
+  el.style.display = isHidden ? 'block' : 'none';
   haptic('light');
 }
 
@@ -517,6 +529,7 @@ function renderToday() {
   setText('ringNum', Math.abs(Math.round(remaining)));
   setText('ringLabel', remaining < 0 ? 'kcal over budget' : 'kcal remaining');
   setText('statTarget', target);
+  setText('infoBaseTarget', getTodayBaseTarget());
   setText('statEaten', Math.round(eaten.cal));
   setText('statBurned', burned);
 
@@ -601,12 +614,16 @@ function renderTodayStepsLog(dateKey) {
   const el  = document.getElementById('todayStepsLog');
   if (!el) return;
   if (!log.steps) {
-    el.innerHTML = '<div class="empty-state">Steps not logged yet today.</div>';
+    el.innerHTML = `<div class="empty-state">Steps not logged yet today.</div>
+      <button class="btn btn-primary btn-block" style="margin-top:12px" onclick="openStepsModal()">+ Log steps</button>`;
     return;
   }
   el.innerHTML = `<div class="log-item">
     <div><div class="log-item-name">${log.steps.steps.toLocaleString()} steps</div><div class="log-item-meta">Galaxy Watch 7</div></div>
-    <div class="log-item-val">${log.steps.kcal} kcal</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="log-item-val">${log.steps.kcal} kcal</div>
+      <button class="btn btn-sm" onclick="openStepsModal()">Edit</button>
+    </div>
   </div>`;
 }
 
@@ -748,14 +765,21 @@ function renderTrain() {
     html += `<div class="circuit-banner">Circuit: ${day.circuitRounds} rounds, all exercises back-to-back. Rest ${day.circuitExerciseRestSec}s between exercises, ${day.circuitRoundRestSec}s between rounds.</div>`;
   }
   html += day.exercises.map((ex, exIdx) => {
+    const altData = EXERCISE_ALTERNATIVES[ex.id];
+    const usingAlt = isToday && !!(log.exerciseAlts||{})[ex.id] && altData;
+    // effective exercise: merge alt fields over base when active, for display + calorie math
+    const effEx = usingAlt ? { ...ex, name: altData.name, how: altData.how, tip: altData.tip,
+      mistake: ex.mistake, metKey: altData.metKey, repsLabel: altData.repsLabel,
+      durationSec: altData.durationSec, reps: altData.durationSec ? null : (ex.reps) } : ex;
+
     const saved   = log.exercises[ex.id] || {};
     const completed = isToday && saved.completed;
-    const sets    = saved.sets || ex.sets;
-    const reps    = saved.reps || ex.reps || 0;
-    const durSec  = saved.durationSec || ex.durationSec || 0;
-    const kcal    = getExerciseKcal(ex, ex.durationSec ? {durationSec:durSec,sets} : {reps,sets});
+    const sets    = saved.sets || effEx.sets;
+    const reps    = saved.reps || effEx.reps || 0;
+    const durSec  = saved.durationSec || effEx.durationSec || 0;
+    const kcal    = getExerciseKcal(effEx, effEx.durationSec ? {durationSec:durSec,sets} : {reps,sets});
     const isOpen  = !!openExerciseDetail[ex.id];
-    const badge   = isToday ? overloadBadgeHTML(ex, sets, reps) : '';
+    const badge   = isToday ? overloadBadgeHTML(effEx, sets, reps) : '';
 
     return `<div class="exercise-card">
       <div class="exercise-head">
@@ -763,26 +787,28 @@ function renderTrain() {
           <svg viewBox="0 0 24 24" fill="none"><path d="M4 12l5 5L20 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div class="exercise-info">
-          <div class="exercise-name">${ex.name}</div>
+          <div class="exercise-name">${effEx.name}${usingAlt ? ' <span class="alt-tag">alt</span>' : ''}</div>
           <div class="exercise-type">${ex.type}</div>
-          <div class="exercise-specs">${sets} sets · ${ex.durationSec ? formatDur(durSec) : reps+' reps'} · Rest ${ex.restSec}s</div>
+          <div class="exercise-specs">${sets} sets · ${effEx.durationSec ? formatDur(durSec) : reps+' reps'} · Rest ${ex.restSec}s</div>
           <div class="exercise-burn">~${kcal} kcal</div>
           ${badge}
           <div class="set-editor">
             <div class="mini-field"><label>Sets</label><input type="number" value="${sets}" min="1" ${isToday?`onchange="updateExerciseOverride('${ex.id}','sets',this.value)"`:'disabled'}></div>
-            ${ex.durationSec
+            ${effEx.durationSec
               ? `<div class="mini-field duration-field"><label>Sec</label><input type="number" value="${durSec}" min="5" ${isToday?`onchange="updateExerciseOverride('${ex.id}','durationSec',this.value)"`:'disabled'}></div>`
               : `<div class="mini-field"><label>Reps</label><input type="number" value="${reps}" min="1" ${isToday?`onchange="updateExerciseOverride('${ex.id}','reps',this.value)"`:'disabled'}></div>`}
           </div>
+          ${altData && isToday ? `<button class="alt-swap-btn" onclick="toggleExerciseAlt('${ex.id}')">${usingAlt ? `↩ Back to ${ex.name}` : `⇄ Try ${altData.name} instead`}</button>` : ''}
         </div>
         <button class="exercise-toggle-btn ${isOpen?'open':''}" onclick="toggleExerciseDetail('${ex.id}')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
       </div>
       <div class="exercise-detail ${isOpen?'open':''}">
-        <div class="detail-block"><div class="detail-label">How to do it</div><ol>${ex.how.map(s=>`<li>${s}</li>`).join('')}</ol></div>
-        <div class="tip-box">${ex.tip}</div>
-        <div class="mistake-box">${ex.mistake}</div>
+        ${usingAlt ? `<div class="tip-box" style="margin-bottom:10px">Why swap: ${altData.reason}</div>` : ''}
+        <div class="detail-block"><div class="detail-label">How to do it</div><ol>${effEx.how.map(s=>`<li>${s}</li>`).join('')}</ol></div>
+        <div class="tip-box">${effEx.tip}</div>
+        ${!usingAlt ? `<div class="mistake-box">${ex.mistake}</div>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -806,6 +832,20 @@ function renderTrainDayStrip() {
 function selectTrainDay(id) { selectedTrainDay = id; renderTrain(); }
 
 function toggleExerciseDetail(id) { openExerciseDetail[id] = !openExerciseDetail[id]; renderTrain(); }
+
+function toggleExerciseAlt(exId) {
+  if (selectedTrainDay !== todayDayId()) { showToast('Switch to today to log this'); return; }
+  const log = getDayLog(todayKey());
+  log.exerciseAlts[exId] = !log.exerciseAlts[exId];
+  // if switching variant, clear any logged sets/reps for this exercise so numbers don't carry over wrong
+  if (log.exercises[exId]) {
+    log.exercises[exId].completed = false;
+  }
+  haptic('light');
+  saveState();
+  renderTrain();
+  showToast(log.exerciseAlts[exId] ? 'Switched to alternative' : 'Back to original exercise');
+}
 
 function formatDur(sec) {
   if (sec >= 60) { const m=Math.floor(sec/60),s=sec%60; return s>0?`${m}m ${s}s`:`${m} min`; }
@@ -1208,6 +1248,7 @@ function confirmAddFood() {
   const items   = getMealItems(dateKey, selectedEatDay, addFoodContext.mealId);
   if (addFoodContext.mode==='custom') {
     const name     = (document.getElementById('customFoodName').value||'').trim();
+    const category = document.getElementById('customFoodCategory').value || 'other';
     const totalCal = parseFloat(document.getElementById('customFoodCal').value)||0;
     const totalP   = parseFloat(document.getElementById('customFoodProtein').value)||0;
     const totalC   = parseFloat(document.getElementById('customFoodCarbs').value)||0;
@@ -1221,16 +1262,20 @@ function confirmAddFood() {
     let food, addAmt, addUnit;
     if (servingG>0) {
       const f = 100/servingG;
-      food = { id:customId, name, unit:'100g', category:'custom', cal:Math.round(totalCal*f), protein:+(totalP*f).toFixed(1), carbs:+(totalC*f).toFixed(1), fat:+(totalF*f).toFixed(1) };
+      food = { id:customId, name, unit:'100g', category, cal:Math.round(totalCal*f), protein:+(totalP*f).toFixed(1), carbs:+(totalC*f).toFixed(1), fat:+(totalF*f).toFixed(1) };
       addAmt=servingG; addUnit=`${servingG}g`;
-      showToast(`${name} saved to My Foods`);
     } else {
-      food = { id:customId, name, unit:'1 serving', category:'custom', cal:totalCal, protein:totalP, carbs:totalC, fat:totalF };
+      food = { id:customId, name, unit:'1 serving', category, cal:totalCal, protein:totalP, carbs:totalC, fat:totalF };
       addAmt=1; addUnit='1 serving';
-      showToast(`${name} added`);
     }
     state.customFoodDefs[customId] = food;
     items.push({ foodId:customId, amount:addAmt, unitLabel:addUnit, custom:true });
+    saveState(); closeAddFoodModal(); haptic('light');
+    renderEat();
+    if (currentView==='today') renderToday();
+    showToast(`${name} saved to My Foods`);
+    openRecipeModal(name, category);
+    return;
   } else {
     if (!addFoodContext.selectedFoodId) { showToast('Pick a food'); return; }
     const amount = parseFloat(document.getElementById('addFoodAmountInput').value);
@@ -1242,6 +1287,29 @@ function confirmAddFood() {
   saveState(); closeAddFoodModal(); haptic('light');
   renderEat();
   if (currentView==='today') renderToday();
+}
+
+// ============================================================
+// RECIPE SUGGESTIONS — shown after saving a new custom food
+// ============================================================
+function openRecipeModal(foodName, category) {
+  const suggestions = getRecipeSuggestions(foodName, category);
+  setText('recipeModalTitle', `Recipe ideas for ${foodName}`);
+  const list = document.getElementById('recipeModalList');
+  if (!list) return;
+  list.innerHTML = suggestions.map(s => {
+    const pairFoods = s.pairFoodIds.map(id => getFood(id)).filter(Boolean);
+    const pairNames = pairFoods.map(f => f.name).join(' + ');
+    return `<div class="recipe-card">
+      <div class="recipe-card-title">${s.title}</div>
+      <div class="recipe-card-method">${s.method}</div>
+      ${pairNames ? `<div class="recipe-card-pair">Pairs with: ${pairNames}</div>` : ''}
+    </div>`;
+  }).join('');
+  document.getElementById('recipeModalBackdrop').classList.add('open');
+}
+function closeRecipeModal() {
+  document.getElementById('recipeModalBackdrop').classList.remove('open');
 }
 
 // ============================================================
@@ -1507,6 +1575,40 @@ function renderWeeklyAverages() {
   setText('weekAvgProtein', Math.round(tProt/div)+'g');
   setText('weekAvgBurn',    Math.round(tBurn/div));
   setText('weekWorkouts',   wDays+'/7');
+  renderWeekRecap(dDays, wDays, Math.round(tProt/div));
+}
+
+function renderWeekRecap(daysWithData, workoutDays, avgProtein) {
+  const el = document.getElementById('weekRecapLine');
+  if (!el) return;
+  if (daysWithData === 0) {
+    el.innerHTML = 'No data logged yet this week — start tracking today to see your recap here.';
+    return;
+  }
+
+  // weight change this week vs 7 days ago
+  const log = state.weightLog || [];
+  let weightLine = '';
+  if (log.length >= 2) {
+    const latest = log[log.length - 1];
+    const weekAgoDate = new Date(); weekAgoDate.setDate(weekAgoDate.getDate() - 7);
+    const weekAgoKey = todayKey(weekAgoDate);
+    const priorEntry = [...log].reverse().find(w => w.date <= weekAgoKey) || log[0];
+    const diff = +(latest.weight - priorEntry.weight).toFixed(1);
+    if (diff !== 0 && priorEntry.date !== latest.date) {
+      weightLine = diff < 0 ? ` Weight is down <strong>${Math.abs(diff)}kg</strong> over that span.` : ` Weight is up ${diff}kg over that span — worth a look at adherence.`;
+    }
+  }
+
+  const proteinTarget = PROFILE.baseMacroTargets.protein;
+  const proteinPct = Math.round((avgProtein / proteinTarget) * 100);
+  const workoutLine = workoutDays >= 5 ? `trained <strong>${workoutDays}/7</strong> days — right on plan` :
+                       workoutDays >= 3 ? `trained <strong>${workoutDays}/7</strong> days — a bit under the 5-day target` :
+                       `trained <strong>${workoutDays}/7</strong> days — worth picking up next week`;
+  const proteinLine = proteinPct >= 90 ? `protein averaged <strong>${proteinPct}%</strong> of target — solid` :
+                       `protein averaged <strong>${proteinPct}%</strong> of target — room to close the gap`;
+
+  el.innerHTML = `This week you ${workoutLine}, and ${proteinLine}.${weightLine}`;
 }
 
 // ============================================================
