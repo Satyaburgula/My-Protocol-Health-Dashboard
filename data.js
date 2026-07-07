@@ -858,3 +858,146 @@ const FOODS_TO_AVOID = [
   'Packaged biscuits / namkeen',
   'A second daily scoop of whey protein'
 ];
+
+// ============================================================
+// EXERCISE ALTERNATIVES — one genuine substitute per main exercise.
+// Keyed by original exercise id. Each alt carries its own metKey
+// so calorie math stays accurate when swapped in.
+// ============================================================
+const EXERCISE_ALTERNATIVES = {
+  mon_squat: {
+    name: 'Wall Sit', reason: 'Easier on knees — isometric hold instead of reps',
+    metKey: 'bodyweight_strength_moderate', repsLabel: 'Hold 30–45 sec', durationSec: 38,
+    how: ['Back flat against a wall, feet shoulder-width, slide down until knees at 90°.', 'Hold the position — thighs parallel to floor.', 'Keep back pressed flat to the wall throughout.', 'Breathe steadily, do not hold your breath.'],
+    tip: 'Great low-impact substitute that still builds quad endurance.'
+  },
+  mon_pushup: {
+    name: 'Incline Push-up', reason: 'Easier variant — reduces load using an elevated surface',
+    metKey: 'bodyweight_strength_moderate', repsLabel: 'Max reps (aim 10–15)',
+    how: ['Hands on a sturdy table, counter, or bench edge, body straight.', 'Lower chest to the edge, elbows at 45°.', 'Push back up, full lockout at top.', 'The higher the surface, the easier the rep.'],
+    tip: 'Same muscles as a floor push-up, just less bodyweight to move — good for building up push-up strength.'
+  },
+  mon_bridge: {
+    name: 'Single-Leg Glute Bridge', reason: 'Harder variant — more glute activation per side',
+    metKey: 'bodyweight_strength_moderate', repsLabel: '12 reps each leg',
+    how: ['Lie on back, one knee bent foot flat, other leg extended straight.', "Drive through the bent leg's heel to lift hips.", 'Squeeze glute hard at top, hold 1 sec.', 'Complete all reps one side then switch.'],
+    tip: 'Use this once regular glute bridges feel too easy.'
+  },
+  mon_plank: {
+    name: 'Knee Plank', reason: 'Easier variant — reduces the lever arm on your core',
+    metKey: 'plank_core_work', repsLabel: '30–45 seconds', durationSec: 38,
+    how: ['Forearms on floor, knees on floor instead of toes.', 'Body straight from head to knees.', 'Brace core exactly as a full plank.', 'Build up time before progressing to full plank.'],
+    tip: 'Perfect stepping stone if a full plank breaks form before 20 seconds.'
+  },
+  tue_cardio: {
+    name: 'Stationary Jog / March in Place', reason: 'No outdoor space needed',
+    metKey: 'jog_light', repsLabel: '25 minutes continuous', durationSec: 1500,
+    how: ['March or jog on the spot at a steady pace.', 'Drive knees up for more intensity.', 'Keep arms pumping naturally.', 'Maintain the same "slightly breathless" effort level as an outdoor jog.'],
+    tip: 'Just as effective for the fat-loss goal — intensity matters more than location.'
+  },
+  tue_hollow: {
+    name: 'Tuck Hold', reason: 'Easier variant — shorter lever arm on the lower back',
+    metKey: 'plank_core_work', repsLabel: '25 seconds', durationSec: 25,
+    how: ['Lie on back, knees pulled to chest, shins parallel to floor.', 'Lift shoulder blades off the floor, arms reaching toward knees.', 'Keep lower back pressed to the floor.', 'Hold and breathe steadily.'],
+    tip: 'Builds toward a full hollow body hold without straining the lower back early on.'
+  },
+  tue_legraise: {
+    name: 'Bent-Knee Leg Raise', reason: 'Easier variant — less strain on lower back',
+    metKey: 'plank_core_work', repsLabel: '12 reps',
+    how: ['Lie on back, knees bent at 90°, hands under glutes.', 'Lower both knees toward chest then extend slightly, staying controlled.', 'Never let lower back arch off the floor.', 'Slow and controlled beats fast and sloppy.'],
+    tip: 'Same core demand, gentler on the spine than straight-leg raises.'
+  },
+  tue_mtnclimb: {
+    name: 'Slow Mountain Climbers', reason: 'Lower intensity — more control, less cardio spike',
+    metKey: 'bodyweight_strength_moderate', repsLabel: '30 seconds',
+    how: ['High plank position, hands under shoulders.', 'Drive one knee in at a controlled pace, then switch.', 'Focus on a dead-still torso rather than speed.', 'Great option on days you want core work without the cardio spike.'],
+    tip: 'Same core anti-rotation training with a gentler heart-rate demand.'
+  },
+  wed_squat: {
+    name: 'Wall Sit', reason: 'Isometric alternative if reps feel repetitive',
+    metKey: 'bodyweight_strength_moderate', repsLabel: 'Hold 30–45 sec', durationSec: 38,
+    how: ['Back against wall, slide down to 90° knee bend.', 'Hold, thighs parallel to floor.', 'Keep core braced, breathe steadily.'],
+    tip: 'A good change-up from rep-based squats.'
+  },
+  wed_bulgarian: {
+    name: 'Reverse Lunge', reason: 'Easier variant — less balance demand than Bulgarian split squat',
+    metKey: 'bodyweight_strength_moderate', repsLabel: '12 reps each leg',
+    how: ['Stand tall, step one foot back, lower that knee toward floor.', 'Front shin stays vertical.', 'Push through front heel to return to standing.', 'Alternate legs.'],
+    tip: 'Trains the same muscles with a much lower skill/balance barrier.'
+  },
+  wed_lunge: {
+    name: 'Static Lunge', reason: 'Easier variant — removes the balance challenge of stepping',
+    metKey: 'bodyweight_strength_moderate', repsLabel: '12 reps each leg',
+    how: ['Split stance, one foot forward one back, both feet planted.', 'Lower straight down until both knees ~90°.', 'Push back up without moving your feet.', 'Complete all reps one side then switch.'],
+    tip: 'Same muscles as a reverse lunge, easier to keep balance since feet stay planted.'
+  },
+  thu_pike: {
+    name: 'Regular Push-up', reason: 'Easier variant if shoulders need a lighter session',
+    metKey: 'bodyweight_strength_moderate', repsLabel: 'Max reps (aim 10–15)',
+    how: ['Standard push-up position, body straight.', 'Lower chest to 2cm from floor.', 'Push back up, full lockout.', 'Still trains shoulders, just less isolated than pike push-ups.'],
+    tip: 'Use on days your shoulders feel fatigued from pike push-ups.'
+  },
+  thu_row: {
+    name: 'Doorway Row', reason: 'No sturdy table available? Use a doorframe or towel around a pole',
+    metKey: 'bodyweight_strength_vigorous', repsLabel: 'Max reps',
+    how: ['Hold a doorframe edge or wrap a towel around a sturdy pole.', 'Lean back with straight arms, feet planted.', 'Pull chest toward the anchor point, elbows driving back.', 'Lower with control.'],
+    tip: 'Same back-and-posture benefit as table rows with different equipment.'
+  },
+  thu_diamond: {
+    name: 'Close-Grip Knee Push-up', reason: 'Easier variant — reduces load while keeping the tricep focus',
+    metKey: 'bodyweight_strength_moderate', repsLabel: '8–10 reps',
+    how: ['Knees on floor, hands together under chest in a diamond shape.', 'Lower chest toward hands, elbows tracking back.', 'Push back up, full lockout.', 'Progress to full diamond push-ups as triceps get stronger.'],
+    tip: 'Keeps the tricep emphasis while being achievable earlier in the program.'
+  },
+  fri_squatcalf: {
+    name: 'Regular Squat', reason: 'Simpler variant — removes the calf raise balance component',
+    metKey: 'circuit_training', repsLabel: '15 reps per round',
+    how: ['Standard bodyweight squat, no calf raise at the top.', 'Full range of motion, controlled pace.', 'Still fits the circuit format perfectly.'],
+    tip: 'Use if the balance demand of the calf raise is throwing off your circuit rhythm.'
+  }
+};
+
+// ============================================================
+// RECIPE SUGGESTION ENGINE — rule-based, uses real FOOD_DB items
+// so pairings are always things actually in the plan. Keyed by
+// the new food's category, gives 2-3 concrete recipe pairings.
+// ============================================================
+const RECIPE_TEMPLATES = {
+  protein: [
+    { title: '{food} Curry Bowl', pair: ['rice_cooked','spinach'],
+      method: 'Simmer {food} in a tomato-onion base with cumin, turmeric, and garam masala. Serve over rice with sautéed spinach on the side.' },
+    { title: '{food} Stir-Fry', pair: ['quinoa_cooked','broccoli'],
+      method: 'Pan-sear {food} with garlic and a splash of soy or tamari, toss with steamed broccoli, serve over quinoa.' },
+    { title: '{food} Power Bowl', pair: ['rice_cooked','tahini'],
+      method: 'Warm {food}, layer over rice with a drizzle of tahini or lemon-cumin dressing and a side salad.' }
+  ],
+  carb: [
+    { title: '{food} + Dal Plate', pair: ['dal_generic','salad_side'],
+      method: 'Swap {food} in for rice or roti at the same portion size, pair with dal and a side salad — same macro logic as your existing lunches.' },
+    { title: '{food} Breakfast Bowl', pair: ['whey_scoop','banana'],
+      method: 'Use {food} as your carb base, stir in a scoop of whey and sliced banana for a quick high-protein breakfast.' }
+  ],
+  fat: [
+    { title: '{food} Oats Topper', pair: ['oats_dry','chia_seeds'],
+      method: 'Stir a small amount of {food} into your overnight oats alongside chia seeds — keeps to your existing fat-per-meal target.' },
+    { title: '{food} Bowl Dressing', pair: ['quinoa_cooked','spinach'],
+      method: 'Thin {food} slightly and drizzle over a quinoa-spinach bowl in place of tahini.' }
+  ],
+  other: [
+    { title: '{food} Add-In', pair: ['greek_yogurt'],
+      method: 'Works well folded into yogurt or added as a topping — use a similar portion to what it\'s replacing to keep calories on track.' }
+  ],
+  custom: [
+    { title: 'Fit {food} Into an Existing Slot', pair: ['rice_cooked'],
+      method: 'Use {food} as a 1:1 swap for whatever it\'s replacing in that meal — matching portion size keeps the meal\'s calories close to target.' }
+  ]
+};
+
+function getRecipeSuggestions(foodName, category) {
+  const templates = RECIPE_TEMPLATES[category] || RECIPE_TEMPLATES.other;
+  return templates.map(t => ({
+    title: t.title.replace('{food}', foodName),
+    method: t.method.replace('{food}', foodName),
+    pairFoodIds: t.pair
+  }));
+}
