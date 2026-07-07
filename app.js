@@ -1660,7 +1660,7 @@ function skipOnboarding() { state.onboardingDone=true; saveState(); const ov=doc
 // INIT
 // ============================================================
 function init() {
-  console.log('Protocol app.js build: 2026-07-03-body-heatmap-greeting');
+  console.log('Protocol app.js build: 2026-07-06-alt-exercises-steps-fix-v2');
   applyTheme();
   initOfflineIndicator();
   updateHeaderDate();
