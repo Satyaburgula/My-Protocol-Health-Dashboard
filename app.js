@@ -307,13 +307,14 @@ function getFood(id) {
 
 function computeItemMacros(item) {
   const food = getFood(item.foodId);
-  if (!food) return { cal:0, protein:0, carbs:0, fat:0 };
+  if (!food) return { cal:0, protein:0, carbs:0, fat:0, fiber:0 };
   const factor = (food.unit==='100g'||food.unit==='100ml') ? item.amount/100 : item.amount;
   return {
     cal:     Math.round(food.cal     * factor),
     protein: +(food.protein * factor).toFixed(1),
     carbs:   +(food.carbs   * factor).toFixed(1),
-    fat:     +(food.fat     * factor).toFixed(1)
+    fat:     +(food.fat     * factor).toFixed(1),
+    fiber:   +((food.fiber||0) * factor).toFixed(1)
   };
 }
 
@@ -353,17 +354,17 @@ function getMealItems(dateKey, dayId, mealId) {
 function computeMealTotals(items) {
   return items.reduce((a,item) => {
     const m = computeItemMacros(item);
-    a.cal += m.cal; a.protein += m.protein; a.carbs += m.carbs; a.fat += m.fat;
+    a.cal += m.cal; a.protein += m.protein; a.carbs += m.carbs; a.fat += m.fat; a.fiber += m.fiber;
     return a;
-  }, {cal:0,protein:0,carbs:0,fat:0});
+  }, {cal:0,protein:0,carbs:0,fat:0,fiber:0});
 }
 
 function computeDayEatenTotals(dateKey, dayId) {
   return MEAL_WINDOWS.reduce((a, mw) => {
     const t = computeMealTotals(getMealItems(dateKey, dayId, mw.id));
-    a.cal += t.cal; a.protein += t.protein; a.carbs += t.carbs; a.fat += t.fat;
+    a.cal += t.cal; a.protein += t.protein; a.carbs += t.carbs; a.fat += t.fat; a.fiber += t.fiber;
     return a;
-  }, {cal:0,protein:0,carbs:0,fat:0});
+  }, {cal:0,protein:0,carbs:0,fat:0,fiber:0});
 }
 
 function switchMealOption(mealId, optionId) {
@@ -537,6 +538,7 @@ function renderToday() {
   setMacroBar('macroProteinNums','macroProteinFill', eaten.protein, macros.protein);
   setMacroBar('macroCarbsNums',  'macroCarbsFill',   eaten.carbs,   macros.carbs);
   setMacroBar('macroFatNums',    'macroFatFill',      eaten.fat,     macros.fat);
+  setMacroBar('macroFiberNums',  'macroFiberFill',    eaten.fiber,   30);
 
   // Medications
   renderMedChecklist();
@@ -976,7 +978,7 @@ function renderEat() {
         const m    = computeItemMacros(item);
         return `<div class="food-item-row ${item._scaledFrom?'scaled-row':''}">
           <span class="food-item-name">${food?food.name:item.foodId}<span class="food-item-amt"> ${item.unitLabel||''}</span></span>
-          <span class="food-item-macros">${m.cal}kcal · ${m.protein}p</span>
+          <span class="food-item-macros">${m.cal}kcal · ${m.protein}p · ${m.fiber}fib</span>
           ${isToday ? `<span class="food-item-actions">
             <button class="icon-btn" onclick="openEditFoodModal('${mw.id}',${idx})" aria-label="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
             <button class="icon-btn" onclick="openSwapModal('${mw.id}',${idx})" aria-label="Swap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4M21 13v2a4 4 0 01-4 4H3"/></svg></button>
@@ -993,6 +995,7 @@ function renderEat() {
         <span>${Math.round(totals.protein)}g protein</span>
         <span>${Math.round(totals.carbs)}g carbs</span>
         <span>${Math.round(totals.fat)}g fat</span>
+        <span>${Math.round(totals.fiber)}g fiber</span>
       </div>
     </div>`;
   }).join('');
@@ -1156,7 +1159,7 @@ function renderSwapResults() {
   if (!list) return;
   list.innerHTML = res.slice(0,25).map(f => `
     <div class="food-result-row ${swapContext.selectedFoodId===f.id?'selected':''}">
-      <div><div class="food-result-name">${f.name}</div><div class="food-result-macro">${f.cal}kcal · ${f.protein}p per ${f.unit}</div></div>
+      <div><div class="food-result-name">${f.name}</div><div class="food-result-macro">${f.cal}kcal · ${f.protein}p · ${f.fiber||0}fib per ${f.unit}</div></div>
       <button class="food-result-btn" onclick="selectSwapFood('${f.id}')">Select</button>
     </div>`).join('') || '<div class="empty-state">No matches</div>';
 }
@@ -1219,7 +1222,7 @@ function renderAddFoodResults() {
     <div class="food-result-row ${addFoodContext.selectedFoodId===f.id?'selected':''}">
       <div>
         <div class="food-result-name">${f.name}${f.source==='custom'?' <span style="color:var(--accent);font-size:10px;font-weight:700">MY FOOD</span>':''}</div>
-        <div class="food-result-macro">${f.cal}kcal · ${f.protein}p · ${f.carbs}c · ${f.fat}f per ${f.unit}</div>
+        <div class="food-result-macro">${f.cal}kcal · ${f.protein}p · ${f.carbs}c · ${f.fat}f · ${f.fiber||0}fib per ${f.unit}</div>
       </div>
       <button class="food-result-btn" onclick="selectAddFoodItem('${f.id}')">Select</button>
     </div>`).join('') || '<div class="empty-state">No matches</div>';
@@ -1253,6 +1256,7 @@ function confirmAddFood() {
     const totalP   = parseFloat(document.getElementById('customFoodProtein').value)||0;
     const totalC   = parseFloat(document.getElementById('customFoodCarbs').value)||0;
     const totalF   = parseFloat(document.getElementById('customFoodFat').value)||0;
+    const totalFib = parseFloat(document.getElementById('customFoodFiber').value)||0;
     const servingG = parseFloat(document.getElementById('customFoodServingG').value)||0;
     if (!name) { showToast('Name the food'); return; }
     if (!totalCal) { showToast('Enter calories'); return; }
@@ -1262,10 +1266,10 @@ function confirmAddFood() {
     let food, addAmt, addUnit;
     if (servingG>0) {
       const f = 100/servingG;
-      food = { id:customId, name, unit:'100g', category, cal:Math.round(totalCal*f), protein:+(totalP*f).toFixed(1), carbs:+(totalC*f).toFixed(1), fat:+(totalF*f).toFixed(1) };
+      food = { id:customId, name, unit:'100g', category, cal:Math.round(totalCal*f), protein:+(totalP*f).toFixed(1), carbs:+(totalC*f).toFixed(1), fat:+(totalF*f).toFixed(1), fiber:+(totalFib*f).toFixed(1) };
       addAmt=servingG; addUnit=`${servingG}g`;
     } else {
-      food = { id:customId, name, unit:'1 serving', category, cal:totalCal, protein:totalP, carbs:totalC, fat:totalF };
+      food = { id:customId, name, unit:'1 serving', category, cal:totalCal, protein:totalP, carbs:totalC, fat:totalF, fiber:totalFib };
       addAmt=1; addUnit='1 serving';
     }
     state.customFoodDefs[customId] = food;
