@@ -966,9 +966,13 @@ label.field-label {
         <div class="macro-bar-top"><span class="name">Fat</span><span class="nums font-mono" id="macroFatNums">0 / 0g</span></div>
         <div class="macro-track"><div class="macro-fill" id="macroFatFill" style="width:0%;background:var(--good)"></div></div>
       </div>
+      <div class="macro-bar-row">
+        <div class="macro-bar-top"><span class="name">Fiber</span><span class="nums font-mono" id="macroFiberNums">0 / 30g</span></div>
+        <div class="macro-track"><div class="macro-fill" id="macroFiberFill" style="width:0%;background:var(--warn)"></div></div>
+      </div>
     </div>
     <div class="info-box" id="infoMacros" style="display:none">
-      Protein (120g base) stays fixed from your diet plan since it's the priority macro for muscle retention during fat loss. When exercise adds extra calories, the surplus splits 35% protein / 40% carbs / 25% fat — carbs get the biggest share since they're what actually refuel training.
+      Protein (120g base) stays fixed from your diet plan since it's the priority macro for muscle retention during fat loss. When exercise adds extra calories, the surplus splits 35% protein / 40% carbs / 25% fat — carbs get the biggest share since they're what actually refuel training. Fiber's target (30g) is a general daily guideline, not from your specific diet plan — most whole foods in your plan (beans, oats, vegetables) already push you toward it naturally.
     </div>
   </div>
 
@@ -1298,6 +1302,10 @@ label.field-label {
           <label class="field-label">Fat (g)</label>
           <input type="number" id="customFoodFat" placeholder="g">
         </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Fiber (g, optional)</label>
+        <input type="number" id="customFoodFiber" placeholder="g">
       </div>
       <div id="recipeSuggestionsBox" style="display:none"></div>
     </div>
